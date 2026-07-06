@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corners of the Convex Hull of Lévy Processes - Interactive Slides</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <!-- Chosen Palette: Academic Slate with Indigo, Teal, and Crimson Accents -->
+    
+    <!-- Application Structure Plan: 
+    The SPA uses a fixed-sidebar dashboard architecture to facilitate non-linear exploration of a highly technical mathematical paper. The structure transforms the linear presentation outline into distinct thematic modules: Context, Geometry, Results, Methodology, and Machinery. This allows readers to anchor themselves in the high-level geometric intuition (using the interactive chart proxies) before drilling down into the dense algebraic and fluctuation machinery. The layout uses generous whitespace, readable line lengths (max-w-4xl), and distinct "Math Boxes" to make the dense LaTeX formulas visually digestible.
+    -->
+    
+    <!-- Visualization & Content Choices: 
+    1. Report Info: Local Geometry & Convex Hulls -> Goal: Inform/Visualize abstract geometric concepts -> Viz Method: Interactive Chart.js Scatter/Line plot simulating a 2D random walk and drawing its convex hull -> Interaction: "Generate New Path" button -> Justification: Bridges the gap between abstract normal cone definitions and visual intuition without requiring local Julia compilation. Library: Chart.js (NO SVG).
+    2. Report Info: The Subsampling Approach -> Goal: Explain the proof mechanism -> Viz Method: Interactive Chart.js Scatter plot comparing a full dense path vs. a subsampled "running supremum" path -> Interaction: Toggle subsample view -> Justification: Clearly visualizes how trading full path information for ladder times yields analytical tractability. Library: Chart.js (NO SVG).
+    3. Report Info: Historical Context -> Goal: Organize timelines -> Viz Method: HTML/Tailwind Timeline layout -> Interaction: Hover states -> Justification: Replaces bullet points with an easy-to-read chronological flow. NO Mermaid/SVG used.
+    -->
+    
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Merriweather:ital,wght@0,300;0,700;1,300&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+        
+        h1, h2, h3, h4, .serif {
+            font-family: 'Merriweather', serif;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 45vh;
+            max-height: 500px;
+            min-height: 350px;
+            background: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1rem;
+            overflow: hidden;
+        }
+        
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 50vh;
+                max-height: 400px;
+            }
+        }
+
+        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background-color: #475569; border-radius: 4px; }
+
+        .nav-link.active {
+            background-color: #1e293b;
+            border-left: 4px solid #4f46e5;
+            color: white;
+        }
+        
+        .math-box {
+            background-color: #f1f5f9;
+            border-left: 4px solid #94a3b8;
+            padding: 1.25rem;
+            border-radius: 0 0.5rem 0.5rem 0;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            left: -7px;
+            top: 6px;
+            border: 3px solid white;
+        }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row min-h-screen">
+
+    <div class="md:hidden bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
+        <h1 class="text-lg font-bold serif truncate">Corners of the Convex Hull</h1>
+        <button id="mobile-menu-btn" class="text-2xl focus:outline-none px-2 py-1">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+    </div>
+
+    <aside id="sidebar" class="hidden md:flex flex-col w-full md:w-72 bg-slate-900 text-slate-300 h-screen sticky top-0 transition-transform duration-300 z-40 sidebar-scroll overflow-y-auto shrink-0 shadow-xl">
+        <div class="p-6 pb-4">
+            <h1 class="text-xl font-bold text-white serif leading-tight mb-3">Corners of the Convex Hull of Lévy Processes</h1>
+            <p class="text-xs text-slate-400 font-semibold tracking-wide uppercase">Interactive Slides</p>
+            <p class="text-xs text-slate-500 mt-2">Chaumont, González Cázares, Mijatović</p>
+        </div>
+        <nav class="flex-1 px-4 pb-6 space-y-1 mt-4" id="nav-menu">
+            <a href="#intro" class="nav-link block px-4 py-3 rounded-md hover:bg-slate-800 hover:text-white transition-colors text-sm font-medium"><i class="fa-solid fa-clock-rotate-left w-6 text-indigo-400"></i> History & Context</a>
+            <a href="#geometry" class="nav-link block px-4 py-3 rounded-md hover:bg-slate-800 hover:text-white transition-colors text-sm font-medium"><i class="fa-solid fa-draw-polygon w-6 text-teal-400"></i> Local Geometry</a>
+            <a href="#results" class="nav-link block px-4 py-3 rounded-md hover:bg-slate-800 hover:text-white transition-colors text-sm font-medium"><i class="fa-solid fa-certificate w-6 text-amber-400"></i> Main Global Results</a>
+            <a href="#methodology" class="nav-link block px-4 py-3 rounded-md hover:bg-slate-800 hover:text-white transition-colors text-sm font-medium"><i class="fa-solid fa-compress w-6 text-rose-400"></i> The Subsampling Approach</a>
+            <a href="#machinery" class="nav-link block px-4 py-3 rounded-md hover:bg-slate-800 hover:text-white transition-colors text-sm font-medium"><i class="fa-solid fa-gears w-6 text-slate-400"></i> Fluctuation Machinery</a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 w-full max-w-5xl mx-auto p-6 md:p-10 lg:p-14 overflow-x-hidden">
+        
+        <header class="mb-16 border-b border-slate-200 pb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-900 serif leading-tight mb-4">Corners and Smoothness of the Convex Hull of Lévy Processes</h1>
+            <p class="text-lg text-slate-600"><b>Jorge González Cázares</b> (<em>IIMAS-UNAM</em>)<br><br> Based on joint work with <br><b>Loïc Chaumont</b> (<em>Université Angers</em>) and <br><b>Aleksandar Mijatović</b> (<em>University of Warwick<em>).
+                <br><br> <small>More ongoing work in this line with <b>Arno Siri-Jégousse</b> and <b>Sandra Palau</b> (<em>IIMAS-UNAM</em>).</small>
+                <br><br> <small>Research at the intersection of probability, differential geometry and convex analysis</small>.</p>
+        </header>
+
+        <section id="intro" class="mb-24 scroll-mt-24">
+            <div class="mb-8">
+                <span class="text-indigo-600 font-bold tracking-wider uppercase text-xs">Part 1</span>
+                <h2 class="text-3xl font-bold text-slate-900 mt-2 mb-4 serif">The History of Smooth Random Convex Hulls</h2>
+                <p class="text-base text-slate-600 leading-relaxed">
+                    This section provides the historical context behind geometric regularity in stochastic processes. It outlines the decades-long pursuit to determine whether the boundaries of random paths (like Brownian motion and Lévy processes) are fundamentally smooth, or if they harbor sharp singularities like corners and thorns.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-lg font-bold text-slate-800 mb-6 border-b pb-2"><i class="fa-solid fa-bezier-curve text-indigo-600 mr-2"></i> Smoothness Timeline</h3>
+                    <ul class="space-y-5 relative border-l-2 border-slate-200 ml-3">
+                        <li class="pl-6 relative">
+                            <div class="timeline-dot bg-indigo-500"></div>
+                            <p class="font-bold text-slate-800 text-sm">Paul Lévy (1948)</p>
+                            <p class="text-sm text-slate-600 mt-1">Observed smoothness for planar Brownian motion.</p>
+                        </li>
+                        <li class="pl-6 relative">
+                            <div class="timeline-dot bg-slate-400"></div>
+                            <p class="font-bold text-slate-800 text-sm">El Bachir (1983)</p>
+                            <p class="text-sm text-slate-600 mt-1">Analysed convex hulls of Brownian motion.</p>
+                        </li>
+                        <li class="pl-6 relative">
+                            <div class="timeline-dot bg-slate-400"></div>
+                            <p class="font-bold text-slate-800 text-sm">Cranston, Hsu & March (1989)</p>
+                            <p class="text-sm text-slate-600 mt-1">Rigorously established smoothness of $\partial H$ for planar Brownian motion.</p>
+                        </li>
+                        <li class="pl-6 relative">
+                            <div class="timeline-dot bg-slate-400"></div>
+                            <p class="font-bold text-slate-800 text-sm">Alexander & Eldan (2019)</p>
+                            <p class="text-sm text-slate-600 mt-1">Extended smoothness of Brownian motion to arbitrary dimension $d \geqslant 2$.</p>
+                        </li>
+                        <li class="pl-6 relative">
+                            <div class="timeline-dot bg-indigo-600"></div>
+                            <p class="font-bold text-slate-800 text-sm">González Cázares, Kramer-Bang & Mijatović (2024)</p>
+                            <p class="text-sm text-slate-600 mt-1">Characterised the class of 1D Lévy processes with smooth time-space convex hulls.</p>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-lg font-bold text-slate-800 mb-6 border-b pb-2"><i class="fa-solid fa-exclamation-triangle text-rose-600 mr-2"></i> Singularities Timeline</h3>
+                    <ul class="space-y-5 relative border-l-2 border-slate-200 ml-3">
+                        <li class="pl-6 relative">
+                            <div class="timeline-dot bg-rose-400"></div>
+                            <p class="font-bold text-slate-800 text-sm">Evans (1985) & Burdzy (1985)</p>
+                            <p class="text-sm text-slate-600 mt-1">Studied Brownian cone points and thorns.</p>
+                        </li>
+                        <li class="pl-6 relative">
+                            <div class="timeline-dot bg-slate-400"></div>
+                            <p class="font-bold text-slate-800 text-sm">Burdzy & Kulczycki (2003)</p>
+                            <p class="text-sm text-slate-600 mt-1">Proved isotropic stable processes have one-sided thorn points.</p>
+                        </li>
+                        <li class="pl-6 relative">
+                            <div class="timeline-dot bg-slate-400"></div>
+                            <p class="font-bold text-slate-800 text-sm">Alexander & Eldan (2019)</p>
+                            <p class="text-sm text-slate-600 mt-1">Proved Brownian motion does not possess two-sided cone points in arbitrary dimensions.</p>
+                        </li>
+                    </ul>
+                    <div class="mt-8 p-4 bg-rose-50 rounded-lg border border-rose-100 shadow-sm">
+                        <p class="font-bold text-rose-900 text-sm"><i class="fa-solid fa-circle-question mr-1"></i> The Open Question:</p>
+                        <p class="text-sm text-rose-800 mt-2 leading-relaxed">Does boundary smoothness exist beyond Brownian motion? What is the generic behaviour of multidimensional Lévy processes?</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="geometry" class="mb-24 scroll-mt-24">
+            <div class="mb-8">
+                <span class="text-teal-600 font-bold tracking-wider uppercase text-xs">Part 2</span>
+                <h2 class="text-3xl font-bold text-slate-900 mt-2 mb-4 serif">Boundary Parametrisation & Local Geometry</h2>
+                <p class="text-base text-slate-600 leading-relaxed">
+                    To understand singularities, we must formally define the geometric boundaries of our stochastic paths. This section introduces the definitions for the Convex Hull, Supporting Hyperplanes, Normal Cones, and the formal classification of singularities (smooth points vs. corners).
+                </p>
+            </div>
+
+            <div class="math-box shadow-sm mb-8">
+                <p class="font-bold text-slate-800 mb-3"><i class="fa-solid fa-cube text-slate-500 mr-2"></i> The Closed Convex Hull in $\mathbb{R}^d$</p>
+                <p class="text-sm leading-relaxed">Let $X = (X_t)_{t \geqslant 0}$ be a Lévy process in $\mathbb{R}^d$, $d \geqslant 2$, and fix $T \in (0, \infty]$. We study the closure of the convex hull of its path:</p>
+                <p class="text-center text-lg my-4 overflow-x-auto">$$H := \mathrm{cl}\,(\text{Conv}\{X_t : t \in [0, T)\})$$</p>
+            </div>
+
+            <div class="mb-8 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800 mb-1"><i class="fa-solid fa-cubes text-slate-500 mr-2"></i> 3D Lévy Process Path & Convex Hull</h3>
+                        <p class="text-sm text-slate-500">Live WebGL representation of a 3D random walk and its computed bounding spatial convex hull (Equivalent to ConvexHull.jl).</p>
+                    </div>
+                    <button id="btn-regen-3d-hull" class="mt-4 md:mt-0 px-3 py-2 bg-slate-600 text-white rounded shadow hover:bg-slate-700 transition font-medium text-xs focus:outline-none whitespace-nowrap">
+                        <i class="fa-solid fa-rotate mr-1"></i> New 3D Path
+                    </button>
+                </div>
+                <div class="w-full rounded-lg border border-slate-300 overflow-hidden h-[450px] relative">
+                    <div id="plotly-general-3d-hull" class="w-full h-full cursor-move"></div>
+                </div>
+            </div>
+
+            <div class="mb-10 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-slate-100 pb-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-chart-line text-teal-500 mr-2"></i> Interactive Proxy: 2D Path & Convex Hull</h3>
+                        <p class="text-xs text-slate-500 mt-1">Visualizing a proxy random walk path and algorithmically computing its enclosing hull $\partial H$, preserving spatial orthogonality.</p>
+                    </div>
+                    <button id="btn-generate-hull" class="mt-4 md:mt-0 px-4 py-2 bg-teal-600 text-white rounded shadow hover:bg-teal-700 transition font-medium text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 whitespace-nowrap">
+                        <i class="fa-solid fa-rotate mr-1"></i> Generate New Path
+                    </button>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="hullChart"></canvas>
+                </div>
+                <div class="mt-4 text-xs text-center text-slate-400"><i class="fa-solid fa-circle-info"></i> The gray points represent the discrete steps of the process $X_t$. The teal perimeter represents the geometric boundary $\partial H$.</div>
+            </div>
+
+            <div class="mb-10 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="text-xl font-bold text-slate-800 mb-4 serif border-b pb-2"><i class="fa-solid fa-wave-square text-indigo-500 mr-2"></i> How can a piecewise linear function be smooth?</h3>
+                <div class="space-y-4 text-sm text-slate-700 mb-6">
+                    <p>It essentially points to a <strong>fractal-like structure</strong>: no two faces are ever neighbours (or any point on their shared boundary would be singular).</p>
+                    <p>In 2D, you should think of the integral of a random Cantor function (Devil's staircase). In 3D (after turning it into a planar graph), think of <strong>Sierpinski's Gasket</strong>, for instance.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="rounded-lg border border-slate-200 p-2 bg-slate-50">
+                        <h4 class="text-center font-semibold text-slate-700 mb-2 text-sm">2D: Cantor Function & Its Integral</h4>
+                        <div id="plotly-cantor" class="w-full h-[300px]"></div>
+                    </div>
+                    <div class="rounded-lg border border-slate-200 p-2 bg-slate-50">
+                        <h4 class="text-center font-semibold text-slate-700 mb-2 text-sm">3D Boundary Face Arrangement (Sierpinski Gasket)</h4>
+                        <div id="plotly-sierpinski" class="w-full h-[300px]"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="flex flex-col">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4 serif border-b pb-2">Supporting Hyperplanes & Normal Cones</h3>
+                    <div class="flex-1 space-y-4 text-sm text-slate-700">
+                        <p>Every point $x \in \partial H$ has an inward-pointing <strong>normal cone</strong>:</p>
+                        <div class="bg-slate-50 p-3 rounded border border-slate-200 overflow-x-auto">
+                            $$\mathfrak{N}(x) := \{\theta \in \mathbb{R}^d_0 : H \subset x + \mathrm{cl}\,\mathfrak{L}_\theta\} \cup \{0\}$$
+                        </div>
+                        <p>where $\mathfrak{L}_\theta := \{y \in \mathbb{R}^d : \langle \theta, y \rangle > 0\}$ is the positive half-space in the direction of $\theta$.</p>
+                        
+                        <p class="pt-2"><strong>Defining the Exposed Point $\mathcal{I}_\theta$:</strong><br>For $\theta \in \mathbb{R}^d_0$ with $I_\theta := \inf_{x \in H} \langle \theta, x \rangle > -\infty$, the face exposed by $\theta$ is:</p>
+                        <div class="bg-slate-50 p-3 rounded border border-slate-200 overflow-x-auto text-center">
+                            $$\mathfrak{F}_\theta := \{x \in H : \langle \theta, x \rangle = I_\theta\}$$
+                        </div>
+                        <p>We define the time of the infimum, $\eta_\theta$, as the last time the directional infimum is approached:</p>
+                        <div class="bg-slate-50 p-3 rounded border border-slate-200 overflow-x-auto text-center">
+                            $$\eta_\theta := \sup\{t \in [0,T) : \langle\theta, X_t\rangle \wedge \langle\theta, X_{t-}\rangle = I_\theta\}$$
+                        </div>
+                        <p>The exposed point is then defined pathwise at this time:</p>
+                        <div class="bg-slate-50 p-3 rounded border border-slate-200 overflow-x-auto text-center">
+                            $$\mathcal{I}_\theta := \begin{cases} X_{\eta_\theta}, & \text{if } \langle\theta, X_{\eta_\theta}\rangle = I_\theta, \\ X_{\eta_\theta-}, & \text{if } \langle\theta, X_{\eta_\theta-}\rangle = I_\theta. \end{cases}$$
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="bg-slate-800 text-white p-6 rounded-xl shadow-lg h-full">
+                        <h3 class="text-lg font-bold mb-5 serif text-teal-300 border-b border-slate-600 pb-2"><i class="fa-solid fa-shapes mr-2"></i> Classifying Singularities</h3>
+                        <p class="mb-6 text-slate-300 text-sm">The geometry at $x \in \partial H$ is rigorously classified by the dimension of its normal cone, $\dim \mathfrak{N}(x)$:</p>
+                        <ul class="space-y-5">
+                            <li class="flex items-start">
+                                <i class="fa-solid fa-circle-check text-teal-400 mt-1 mr-4 text-lg"></i>
+                                <div>
+                                    <strong class="text-white text-base">Smooth Point</strong><br>
+                                    <span class="text-slate-300 text-sm block mt-1 bg-slate-900/50 p-2 rounded">$\dim \mathfrak{N}(x) = 1$. The normal cone is a single 1D ray.</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa-solid fa-ruler-combined text-amber-400 mt-1 mr-4 text-lg"></i>
+                                <div>
+                                    <strong class="text-white text-base">Edge Point of Degree $r$</strong><br>
+                                    <span class="text-slate-300 text-sm block mt-1 bg-slate-900/50 p-2 rounded">$\dim \mathfrak{N}(x) = d - r$.</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fa-solid fa-exclamation-triangle text-rose-400 mt-1 mr-4 text-lg"></i>
+                                <div>
+                                    <strong class="text-white text-base">Corner</strong><br>
+                                    <span class="text-slate-300 text-sm block mt-1 bg-slate-900/50 p-2 rounded">$\dim \mathfrak{N}(x) = d$ (i.e., $r=0$). The most extreme geometric singularity, where the normal cone spans a full $d$-dimensional volume.</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="results" class="mb-24 scroll-mt-24">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold text-slate-800 mb-3"><i class="fa-solid fa-cube text-teal-500 mr-2"></i> Corner Singularity</h3>
+                    <p class="text-sm text-slate-500 mb-4">Interactive WebGL showing a corner where $\dim \mathfrak{N}(x) = 3$.</p>
+                    <div class="w-full rounded-lg border border-slate-300 overflow-hidden h-[400px]">
+                        <div id="plotly-corner-body" class="w-full h-full"></div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-bold text-slate-800 mb-3"><i class="fa-solid fa-cube text-amber-500 mr-2"></i> Singular Line</h3>
+                    <p class="text-sm text-slate-500 mb-4">Interactive WebGL showing a singular line where $\dim \mathfrak{N}(x) = 2$.</p>
+                    <div class="w-full rounded-lg border border-slate-300 overflow-hidden h-[400px]">
+                        <div id="plotly-singular-body" class="w-full h-full"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-8 mt-10">
+                <span class="text-amber-500 font-bold tracking-wider uppercase text-xs">Part 3</span>
+                <h2 class="text-3xl font-bold text-slate-900 mt-2 mb-4 serif">Main Global Results</h2>
+                <p class="text-base text-slate-600 leading-relaxed">
+                    This section details the primary theorems established by the report. The central breakthrough is identifying a broad class of processes $\mathfrak{D}$ whose convex hulls lack corners entirely, and exploring the geometric limitations when analyzing dimensions $d \geqslant 3$.
+                </p>
+            </div>
+
+            <div class="bg-white border-l-4 border-amber-500 p-6 rounded-r-xl shadow-md mb-8">
+                <h3 class="text-xl font-bold text-slate-800 mb-3 serif"><i class="fa-solid fa-crown text-amber-500 mr-2"></i> Theorem (Chaumont, GC, Mijatović, 2026+): Absence of Corners</h3>
+                <p class="text-base text-slate-700 font-medium mb-4 bg-amber-50 p-3 rounded">For any $X \in \mathfrak{D}$, $\partial H$ has no corners a.s. In particular, in dimension $d=2$, $\partial H$ is completely smooth a.s.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div class="bg-slate-50 p-4 rounded border border-slate-200">
+                        <strong class="text-slate-800">Corollary:</strong> This property is preserved under locally diffeomorphic transformations (with full rank Jacobian).
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded border border-slate-200">
+                        <strong class="text-slate-800">Corollary:</strong> Lévy processes in $\mathfrak{D}$ a.s. do not possess two-sided corner points.
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-5 mb-10">
+                <div class="lg:col-span-3">
+                    <div class="math-box h-full m-0 flex flex-col justify-center">
+                        <p class="font-bold text-slate-800 mb-3 border-b border-slate-300 pb-2">Defining the Regularity Classes $\mathfrak{D}$ and $\mathfrak{D}'$</p>
+                        <p class="text-slate-700 text-sm mb-3">Define the class $\mathfrak{D}$ of Lévy processes $X$ with: 
+                            $$\sup_{\theta \in \mathbb{R}^d_0} \dim N_\theta < d,$$ 
+                            where the <b>deterministic cone</b> $N_\theta$ is defined as: 
+                            $$N_\theta := \left\{\theta' \in \mathbb{R}^d : \int_0^1 \mathbb{P}(\langle \theta, X_t \rangle \langle \theta', X_t \rangle < 0) \frac{dt}{t} < \infty\right\}.$$ 
+                            Similarly, define the class $\mathfrak{D}'\subset\mathfrak{D}$ of Lévy processes $X$ with 
+                            $$\sup_{\theta \in \mathbb{R}^d_0} \dim M_\theta < d,$$ 
+                            where the <b>deterministic cone</b> $M_\theta\supset N_\theta$ is defined via 
+                            $$M_\theta := \left\{\theta' \in \mathbb{R}^d : \liminf_{t\downarrow 0}\mathbb{P}(\langle \theta, X_t \rangle \langle \theta', X_t \rangle < 0)=0\right\}.$$</p>
+                    </div>
+                </div>
+                <div class="lg:col-span-2">
+                    <div class="bg-slate-100 p-6 rounded-xl border border-slate-200 flex flex-col justify-center">
+                        <h4 class="font-bold text-slate-800 mb-4 uppercase tracking-wide text-xs"><i class="fa-solid fa-list-check text-slate-500 mr-1"></i> Prominent Members of $\mathfrak{D}'\subset\mathfrak{D}$</h4>
+                        <ul class="list-disc pl-5 space-y-3 text-sm text-slate-700 marker:text-amber-500">
+                            <li class="pl-1">$\alpha$-stable processes with full support (for $\alpha \in (0,2)$).</li>
+                            <li class="pl-1">Processes in the small-time domain of attraction of such an $\alpha$-stable process.</li>
+                            <li class="pl-1">Isotropic processes of infinite activity.</li>
+                            <li class="pl-1">Processes in $\mathfrak{D}'$ subordinated by an independent subordinator $X \circ \Gamma$.</li>
+                            <li class="pl-1">Processes in $\mathfrak{D}'$ with arbitrary modifications to macroscopic jumps. <br> <em>(This invariance is also true of $\mathfrak{D}$.)</em></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-slate-800 mb-4 serif">Local Differentiability & Bounding the Normal Cone</h3>
+                <div class="bg-white border border-slate-200 p-5 rounded-lg shadow-sm">
+                    <p class="font-bold text-slate-800 text-sm mb-3">Theorem (Rogozin for cones; Chaumont, GC, Mijatović, 2026+): Fix $\theta \in \mathbb{R}^d_0$ with $I_\theta > -\infty$ a.s.</p>
+                    <ol class="list-decimal pl-5 space-y-2 text-sm text-slate-700">
+                        <li>If $N_\theta \neq \mathbb{R}^d$, then $\mathfrak{F}_\theta$ is a.s. a singleton $\{\mathcal{I}_\theta\}$.</li>
+                        <li>Fix $k \in \{1, \dots, d-1\}$. If $[\theta_1, \dots, \theta_k] \notin N_{\boldsymbol{\theta}}^k$, where
+                            <div class="bg-slate-50 p-2 rounded border border-slate-200 overflow-x-auto text-center my-2">
+                                $$N_{\boldsymbol{\theta}}^k :=\bigg\{ [\theta_1,\ldots,\theta_k]\in\mathbb{R}^{d\times k} :\int_0^1\mathbb{P}\bigg(X_t\in\bigg[{\color{royalblue}\mathfrak{L}_{\theta}\cap\bigcap_{i=1}^k\mathfrak{L}_{-\theta_i}}\bigg]\cup\bigg[{\color{red}\mathfrak{L}_{-\theta}\cap\bigcap_{i=1}^k\mathfrak{L}_{\theta_i}}\bigg]\bigg)\frac{dt}{t}<\infty \bigg\}$$
+                            </div>
+                            then $X_{\eta_\theta\pm\cdot}-\mathcal{I}_\theta$ immediately enters $\bigcap_{i=1}^k\mathfrak{L}_{-\theta_i}$ a.s. (i.e., either the ${\color{red}\text{pre-}\eta_\theta}$ or the ${\color{royalblue}\text{post-}\eta_\theta}$ process immediately enters $\bigcap_{i=1}^k\mathfrak{L}_{-\theta_i}$). In particular, $\mathfrak{N}(\mathcal{I}_\theta) \cap \text{cone}(\{\theta_1, \dots, \theta_k\}) = \{0\}$ a.s.
+                        </li>
+                        <li>If $\dim(\text{span } N_\theta^k) < kd$, then $\dim \mathfrak{N}(\mathcal{I}_\theta) \leqslant d - k$ a.s.</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="p-6 border border-teal-200 bg-teal-50/50 rounded-xl mb-8">
+                <h3 class="text-lg font-bold text-teal-900 mb-4"><i class="fa-solid fa-check-circle mr-2"></i> Resolving the Global Problem</h3>
+                <div class="space-y-4 text-sm text-slate-700">
+                    <p><strong class="text-teal-800">Absence of Corners ($k=1$):</strong> How does the local theorem prove our first main result on corners? When $k=1$ (i.e., the case of corners), we may pick a countable dense collection of directions $\theta$ and note that, if a corner existed, its normal cone would have non-empty interior, thus intersecting the chosen countable dense set, which yields a contradiction.</p>
+                    <p><strong class="text-teal-800">The General Resolution via Grassmannians:</strong> To forbid higher-dimensional singularities globally, we must prohibit non-trivial intersections with higher-dimensional cones, requiring algebraic topological arguments over Grassmannians $\mathrm{Gr}(k,d)$. More precisely, such arguments show that controlling a.s. non-intersections of $\mathfrak{N}(\mathcal{I}_\theta)$ with appropriate cones, applied over a suitable countable set, implies the a.s. bound on the dimension $\mathrm{dim}\,\mathfrak{N}(\mathcal{I}_\theta)$.</p>
+                    <p><strong class="text-teal-800">What remains to prove:</strong> Thus, to establish our final goal (bounding the dimension $\mathrm{dim}\,\mathfrak{N}(\mathcal{I}_\theta)$ as well as our main theorem), it remains to establish the regularity of cones for the pre-$\eta_\theta$ and post-$\eta_\theta$ processes.</p>
+                </div>
+            </div>
+
+            <div class="p-6 border border-rose-200 bg-rose-50/50 rounded-xl">
+                <h3 class="text-lg font-bold text-rose-900 mb-4"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Why $d \geqslant 3$ is Fundamentally Harder</h3>
+                <div class="space-y-4 text-sm text-slate-700">
+                    <p><strong class="text-rose-800">Warning:</strong> The absence of singularities globally <em>cannot</em> be deduced purely from ensuring every $\mathcal{I}_\theta$ is regular via countable deterministic directions.</p>
+                    <p><strong class="text-rose-800">The Geometric Obstruction:</strong> If we construct a convex body with at least one singular point that is not a corner, and apply an <em>absolutely continuous random rotation</em>, then with probability 1, no deterministic countable set of directions will ever expose the singular line.</p>
+                    <p><strong class="text-rose-800">The Probabilistic Hurdle in $\mathbb{R}^d$:</strong> Even though we fixed the local problem (i.e., we can now give definitive conclusions), the a.s. global smoothness problem remains. This is a specific hurdle for probabilists since a.s. events can only be intersected countably many times to remain a.s., while other fields (like convex analysis) typically don't worry about such issues. If a surface is fixed, global smoothness is equivalent to local smoothness of every point. Adding "a.s." breaks this down, because countably many events may not induce global regularity if $d \geqslant 3$.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="methodology" class="mb-24 scroll-mt-24">
+            <div class="mb-8">
+                <span class="text-rose-500 font-bold tracking-wider uppercase text-xs">Part 4</span>
+                <h2 class="text-3xl font-bold text-slate-900 mt-2 mb-4 serif">The Subsampling Approach</h2>
+                <p class="text-base text-slate-600 leading-relaxed">
+                    This section demonstrates the core methodological trick used to bypass the intractability of conditioned processes. By strategically subsampling the path at specific ladder times, the analysis of complex half-space containment becomes mathematically viable.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                <div class="bg-white border border-slate-200 p-6 rounded-xl shadow-sm">
+                    <h3 class="text-lg font-bold text-slate-800 mb-3 border-b pb-2"><i class="fa-solid fa-ban text-slate-400 mr-2"></i> The Intractability Problem</h3>
+                    <p class="text-slate-600 text-sm mb-4">
+                        To determine if the process visits $\mathfrak{L}_{-\theta'}$, we must analyse the post-infimum process $X_{\eta_\theta + \cdot} - \mathcal{I}_\theta$. This behaves like the process <em>conditioned to stay in a half-space</em> $\mathfrak{L}_\theta$. While this can be analysed using Doob $h$-transforms (e.g., Ivanovs and Thøstesen, 2022), the resulting laws are <strong>highly intractable</strong>. Extracting explicit 0-1 criteria from them is extremely difficult.
+                    </p>
+                    
+                    <h3 class="text-lg font-bold text-slate-800 mb-3 border-b pb-2 mt-6"><i class="fa-solid fa-wand-magic-sparkles text-rose-500 mr-2"></i> A Miraculous Simplification</h3>
+                    <p class="text-slate-600 text-sm">
+                        Instead of analysing the full conditioned path, we <strong>subsample</strong> the process at times when it is "close" to the orthogonal plane $\theta^\perp$ anchored at the exposed point. We trade full path information for analytical tractability, projecting coordinate by coordinate.
+                    </p>
+                </div>
+                
+                <div class="bg-slate-900 text-white border border-slate-800 p-6 rounded-xl shadow-lg relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-slate-800 rounded-bl-full -z-10"></div>
+                    <h3 class="font-bold text-lg mb-4 text-rose-300 border-b border-slate-700 pb-2"><i class="fa-solid fa-arrows-split-up-and-left mr-2"></i> Geometric Separation</h3>
+                    <div class="space-y-4 text-sm text-slate-300">
+                        <p>Under general conditions, a direction $\theta$ exposes a single point $\mathcal{I}_\theta$.</p>
+                        <p>To check if another vector $\theta'$ exposes $\mathcal{I}_\theta$, we simply check if the path intersects the positive half-space $\mathfrak{L}_{-\theta'}$ anchored at $\mathcal{I}_\theta$.</p>
+                        <p class="bg-slate-800/80 p-3 rounded border border-slate-700 font-medium text-rose-100">
+                            If the path immediately enters the intersection of two half spaces $\mathfrak{L}_{-\theta_1} \cap \mathfrak{L}_{-\theta_2}$, no positive combination of those normals can expose $\mathcal{I}_\theta$. A similar phenomenon is true for the intersection of $k$ half-spaces.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-slate-100 pb-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-filter text-rose-500 mr-2"></i> Interactive Proxy: Subsampling Simulator</h3>
+                        <p class="text-xs text-slate-500 mt-1">Comparing the dense, intractable full path with the tractably subsampled ladder times. Showcasing all 4 geometric properties simultaneously.</p>
+                    </div>
+                    <div class="flex gap-2 mt-4 md:mt-0">
+                        <button id="btn-toggle-subsample" class="px-3 py-2 bg-slate-700 text-white rounded shadow hover:bg-slate-800 transition font-medium text-xs focus:outline-none whitespace-nowrap">
+                            <i class="fa-solid fa-eye-slash mr-1"></i> Subsample Only
+                        </button>
+                        <button id="btn-regen-subsample" class="px-3 py-2 bg-rose-600 text-white rounded shadow hover:bg-rose-700 transition font-medium text-xs focus:outline-none whitespace-nowrap">
+                            <i class="fa-solid fa-rotate mr-1"></i> New Data
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="chart-container" style="background-color: #fafafa; min-height: 250px; height: 35vh; max-width: none;">
+                        <canvas id="subsampleGlobalChart"></canvas>
+                        <div class="absolute bottom-2 right-2 text-xs text-slate-500 font-bold bg-white/80 px-2 py-1 rounded shadow-sm">Global (X vs Y)</div>
+                    </div>
+                    <div class="chart-container" style="background-color: #fafafa; min-height: 250px; height: 35vh; max-width: none;">
+                        <canvas id="subsampleZoomChart"></canvas>
+                        <div class="absolute bottom-2 right-2 text-xs text-slate-500 font-bold bg-white/80 px-2 py-1 rounded shadow-sm">Zoomed (Left Anchor)</div>
+                    </div>
+                    <div class="chart-container" style="background-color: #fafafa; min-height: 250px; height: 35vh; max-width: none;">
+                        <canvas id="subsampleTxChart"></canvas>
+                        <div class="absolute bottom-2 right-2 text-xs text-slate-500 font-bold bg-white/80 px-2 py-1 rounded shadow-sm">Time vs X</div>
+                    </div>
+                    <div class="chart-container" style="background-color: #fafafa; min-height: 250px; height: 35vh; max-width: none;">
+                        <canvas id="subsampleTyChart"></canvas>
+                        <div class="absolute bottom-2 right-2 text-xs text-slate-500 font-bold bg-white/80 px-2 py-1 rounded shadow-sm">Time vs Y</div>
+                    </div>
+                </div>
+                <p class="text-sm mb-3 mt-4">Our goal is to prove that the time-changed process immediately enters a cone $C$ (in an appropriate class) almost surely:</p>
+                <p class="text-center my-3 bg-white p-2 rounded border inline-block mx-auto w-full overflow-x-auto">$$X_{\eta_\theta + \Gamma^\theta} - \mathcal{I}_\theta \text{ immediately enters } C \text{ a.s.}$$</p>
+                <p class="text-sm mt-2">This guarantees the actual post-infimum process $X_{\eta_\theta + \cdot} - \mathcal{I}_\theta$ enters $C$, which is necessary for ruling out normal cone intersections.</p>
+            </div>
+        </section>
+
+        <section id="machinery" class="mb-24 scroll-mt-24">
+            <div class="mb-8">
+                <span class="text-slate-500 font-bold tracking-wider uppercase text-xs">Part 5</span>
+                <h2 class="text-3xl font-bold text-slate-900 mt-2 mb-4 serif">Fluctuation Machinery</h2>
+                <p class="text-base text-slate-600 leading-relaxed mb-4">
+                    The final step is to rigorously analyze the subsampled process. We build the machinery backwards: transforming the post-infimum into a running supremum, analyzing the time-changed process via fluctuation theory, and characterizing regular points via an extended Rogozin criterion.
+                </p>
+                <p class="text-sm text-slate-600 bg-slate-100 p-4 border-l-4 border-slate-400 rounded">
+                    Technically, we use $T=\infty$ and exponential killing. The actual intuition is that the results will hold a.s. simultaneously for a sequence of i.i.d. standard exponential times, so the strong law of large numbers and a density argument closes the gap, pushing everything back to deterministic times.
+                </p>
+            </div>
+
+            <div class="math-box shadow-sm mb-10 border-l-slate-600">
+                <p class="font-bold text-slate-800 mb-3"><i class="fa-solid fa-sitemap text-slate-500 mr-2"></i> Logic Flowchart</p>
+                <p class="text-sm mb-3">Our goal is to prove that the time-changed process immediately enters a cone $C$ almost surely:</p>
+                <p class="text-center my-3 bg-white p-2 rounded border inline-block mx-auto w-full overflow-x-auto">$$X_{\eta_\theta + \Gamma^\theta} - \mathcal{I}_\theta \text{ immediately enters } C \text{ a.s.}$$</p>
+                <p class="text-sm mt-2 mb-3">where $\Gamma^\theta$ is the right-continuous inverse local time of the reflected process of $\langle \theta,X\rangle$ at its running supremum.</p>
+                <p class="text-sm">This guarantees the actual post-infimum process $X_{\eta_\theta + \cdot} - \mathcal{I}_\theta$ enters $C$, which is necessary for ruling out normal cone intersections.</p>
+            </div>
+
+            <div class="flex flex-col gap-8 mb-10">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-center">
+                    <h3 class="text-lg font-bold text-slate-800 mb-3 border-b pb-2"><i class="fa-solid fa-clock-rotate-left text-indigo-500 mr-2"></i> Bertoin's Excursion Reversal</h3>
+                    <p class="text-sm text-slate-600 mb-4">
+                        Using time-reversal on excursions away from the directional extrema, we obtain a multidimensional extension of Bertoin's identity, which morally says that the analysis of the process post all-time infimum is equivalent to the analysis of the running supremum of the same process starting from 0.
+                    </p>
+                    <div class="bg-slate-50 p-3 rounded border overflow-x-auto text-sm mt-2 mb-2">
+                        <b>Theorem</b> (Chaumont, GC, Mijatović, 2026+). Fix $\theta\in\mathbb{R}^d$ such that $I_{\theta}>-\infty$ a.s. and $\langle\theta,X\rangle$ immediately enters $(-\infty,0)$ a.s. Then,
+                        $$(( X - \underline{X}^\theta, \underline{X}^\theta - \mathcal{I}_\theta )_{\eta_\theta + t}); t\geqslant 0) \stackrel{d}{=} ( (R, \overline{X}^\theta)_t; t\geqslant 0 ).$$
+                    </div>
+                    <p class="text-sm text-center text-slate-600 mt-3">Here, $\underline{X}^\theta$ and $\overline{X}^\theta$ track $X$ as $\langle \theta,X\rangle$ attains its future infimum or running supremum, respectively: consider the time of the ultimate infimum prior to $t$,</p>
+                    <div class="bg-slate-50 p-3 rounded border text-center overflow-x-auto text-sm mt-2 mb-2">
+                        $$\underline{\tau}^\theta_t := \sup\left\{s \in [0,t] : \langle \theta, X_s \rangle \wedge \langle \theta, X_{s-} \rangle = \inf_{u\in[0,t]}\langle \theta, X_u \rangle\right\},$$
+                    </div>
+                    <p class="text-sm text-slate-600 mt-2">Then $\underline{X}^\theta$ is defined to record the position of $X$ at this time:</p>
+                    <div class="bg-slate-50 p-3 rounded border text-center overflow-x-auto text-sm mt-2 mb-2">
+                        $$\underline{X}^\theta_t := \begin{cases} X_{\underline{\tau}^\theta_t}, & \langle \theta, X_{\underline{\tau}^\theta_t} \rangle \leqslant \langle \theta, X_{\underline{\tau}^\theta_t-} \rangle, \\ X_{\underline{\tau}^\theta_t-}, & \langle \theta, X_{\underline{\tau}^\theta_t} \rangle > \langle \theta, X_{\underline{\tau}^\theta_t-} \rangle. \end{cases}$$
+                    </div>
+                    <p class="text-sm text-slate-600 mt-2">The process $\overline{X}^\theta$ is defined similarly using the times at which $\langle \theta,X\rangle$ attains new suprema $\overline{\tau}^\theta_t$. The process $R$ is defined as a time and space reversal excursion-by-excursion of the reflected process above its running supremum:</p>
+                    <div class="bg-slate-50 p-3 rounded border text-center overflow-x-auto text-sm mt-2 mb-2">
+                        $$R_t := (\overline{X}^{\theta}-X)_{(d_t+g_t-t)-}$$
+                    </div>
+                    <p class="text-sm text-center text-slate-600">where $g_t$ and $d_t$ are the left and right endpoints of the excursion interval straddling $t$.</p>
+                    <p class="text-xs text-center text-indigo-600 mt-3 font-semibold uppercase tracking-wide">No complex conditionings are required!</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800 mb-1"><i class="fa-solid fa-arrow-right-arrow-left text-indigo-500 mr-2"></i> Visualizing Bertoin's Transformation</h3>
+                            <p class="text-sm text-slate-500">Side-by-side components vs time demonstrating the equivalence of the future infimum and the running supremum.</p>
+                        </div>
+                        <button id="btn-regen-bertoin" class="mt-4 md:mt-0 px-3 py-2 bg-indigo-600 text-white rounded shadow hover:bg-indigo-700 transition font-medium text-xs focus:outline-none whitespace-nowrap">
+                            <i class="fa-solid fa-rotate mr-1"></i> New Excursion Reversal
+                        </button>
+                    </div>
+                    <div class="chart-container" style="background-color: #fafafa; min-height: 350px;">
+                        <canvas id="bertoinChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 text-white p-6 md:p-8 rounded-xl shadow-lg relative overflow-hidden">
+                <i class="fa-solid fa-infinity absolute -right-4 -bottom-4 text-9xl text-slate-700 opacity-20"></i>
+                <div class="relative z-10">
+                    <h3 class="text-xl font-bold mb-4 text-teal-300 serif border-b border-slate-600 pb-2">Multidimensional Fluctuation Identities</h3>
+                    
+                    <div class="flex flex-col gap-8">
+                        <div>
+                            <p class="text-sm text-slate-300 font-semibold mb-2">Tamura & Tanaka, 2002 (Pecherskii-Rogozin in $\mathbb{R}^d$):</p>
+                            <p class="text-xs text-slate-400 mb-2">Joint distribution of extrema. This multidimensional extension provides the crucial Laplace-Fourier exponent $\kappa_\theta(\phi, \vartheta)$, defined as:</p>
+                            <div class="bg-slate-900 p-3 rounded border border-slate-700 overflow-x-auto text-sm">
+                                $$\kappa_\theta(\phi, \vartheta) := \exp\left(\int_0^\infty\!\!\int_{\mathrm{cl}\,\mathfrak{L}_\theta}\! (e^{-t} - e^{-\phi t + i\langle \vartheta, x\rangle}) \mathbb{P}(X_t \in dx) \frac{dt}{t}\right).$$
+                            </div>
+                            <p class="text-xs text-slate-400 mb-2"> If $\zeta\sim\mathrm{Exp}(\lambda)$ is an independent exponential time with rate $\lambda>0$, then the vectors $(\overline{\tau}^{\theta}_\zeta,\overline{X}^{\theta}_\zeta)$ and $(\zeta-\overline{\tau}^{\theta}_\zeta,X_\zeta-\overline{X}^{\theta}_\zeta)$ in $\mathbb{R}^{d+1}$ are independent and infinitely divisible and, for $(\phi,u)\in\mathbb{R}_+\times\mathbb{R}^{d}$, we have</p>
+                            <div class="bg-slate-900 p-3 rounded border border-slate-700 overflow-x-auto text-sm">
+                                $$\begin{gathered}\mathbb{E}\Big[e^{-\phi\overline{\tau}^{\theta}_\zeta + i\langle u,\overline{X}^\theta_\zeta\rangle}\Big] = \exp\bigg(\!\int_0^\infty\!\!\int_{\mathrm{cl}\,\mathfrak{L}_{\theta}}\! (e^{-\phi t + i\langle u,x\rangle}-1) \mathbb{P}(X_t\in dx)\frac{dt}{t}\bigg) = \frac{\kappa_{\theta}(\lambda,0)}{\kappa_{\theta}(\lambda+\phi,u)}\\ \mathbb{E}\Big[e^{-\phi(\zeta-\overline{\tau}^{\theta}_\zeta) + i\langle u, X_\zeta-\overline{X}^{\theta}_\zeta\rangle}\Big] = \exp\bigg(\!\int_0^\infty\!\!\int_{\mathfrak{L}_{-\theta}}\! (e^{-\phi t + i\langle u,x\rangle}-1)\mathbb{P}(X_t\in dx)\frac{dt}{t}\bigg). \end{gathered}$$
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-sm text-slate-300 font-semibold mb-2">Fristedt's Theorem:</p>
+                            <p class="text-xs text-slate-400 mb-2">The time-changed process $(id, X) \circ \Gamma^\theta_t$ is a killed Lévy process with exponent</p>
+                            <div class="bg-slate-900 p-3 rounded border border-slate-700 overflow-x-auto text-sm">
+                                $$\log \mathbb{E}[e^{\langle(-\phi, i\vartheta), Y_1\rangle}] = -c_0 \kappa_\theta(\phi, \vartheta) + q_0 - q_\lambda$$
+                            </div>
+                            <p class="text-xs text-slate-400 mt-2">Here, $q_0$ and $q_\lambda$ are just killing rates, where $\lambda$ is the killing rate of the original process $X$. $\Gamma^\theta$ is the inverse local time of the reflected process of $\langle \theta,X\rangle$ at its running supremum.</p>
+                        </div>
+                        
+                        <div class="mt-2 border-t border-slate-600 pt-4">
+                            <p class="text-sm text-slate-300 font-semibold mb-2">The ABCD Identity (Theorem; Chaumont, GC, Mijatović, 2026+):</p>
+                            <p class="text-xs text-slate-400 mb-2">The Alili-Bertoin-Chaumont-Doney identity connects the analytical dots, allowing characterisation of half-space entrance via local times:</p>
+                            <div class="bg-slate-900 p-3 rounded border border-slate-700 overflow-x-auto text-sm w-full md:w-3/4 mx-auto">
+                                $$\mathbb{P}(L^\theta_{\sigma^{\theta}(x^\theta)} \in ds, X_t \in dx) \frac{dt}{t} = \mathbb{P}(\Gamma^\theta_s \in dt, X \circ \Gamma^\theta_s \in dx) \frac{ds}{s}$$
+                            </div>
+                            <p class="text-xs text-slate-400 mt-2">where $\sigma^{\theta}(u) := \inf\{t>0 : \langle\theta,X_t\rangle > u\}$ is the first time $\langle\theta,X_t\rangle$ hits $(u,\infty)$, for $u>0$.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-10 bg-white p-6 rounded-xl border-l-4 border-slate-800 shadow-sm">
+                <h3 class="text-xl font-bold text-slate-800 mb-4 serif">Proving an Extension of Rogozin's Criterion for Cones via Induction and Subsampling</h3>
+                <p class="text-sm text-slate-700 mb-3 font-semibold">Theorem (Chaumont, GC, Mijatović, 2026+): Fix $\theta_1, \dots, \theta_n \in \mathbb{R}^d_0$. If</p>
+                <p class="text-center my-3 overflow-x-auto">$$\int_0^1 \mathbb{P}\left(X_t \in \bigcap_{k=1}^n \mathfrak{L}_{\theta_k}\right) \frac{dt}{t} = \infty$$</p>
+                <p class="text-sm text-slate-700 mb-3 font-semibold">then $X$ immediately enters $\bigcap_{k=1}^n \mathfrak{L}_{\theta_k}$ a.s.</p>
+                
+                <div class="mt-4 pl-4 border-l-2 border-slate-200 space-y-3 text-sm text-slate-600">
+                    <p><strong class="text-slate-800">Base Case $n=1$:</strong> Classical Rogozin's criterion: $\langle\theta_1,X\rangle$ is a 1D Lévy process that immediately becomes positive.</p>
+                    <p><strong class="text-slate-800">Inductive Step:</strong> Suppose true for $n-1$.</p>
+                    <ol class="list-decimal pl-5 space-y-2 mt-2">
+                        <li>By Rogozin, $Y := \langle\theta_1, X\rangle$ enters $(0, \infty)$ immediately.</li>
+                        <li>Fristedt's theorem ensures $X \circ \Gamma^{\theta_1}$ is a Lévy process. Crucially, this Lévy process is <strong>immediately active</strong> (i.e., $\Gamma^{\theta_1}$ is a subordinator), which is important because immediate events are still immediate even after time-changing, which would not be the case if the regularity of Step 1 failed.</li>
+                        <li>The ABCD identity gives: $$\int_0^1 \mathbb{P}\left(X \circ \Gamma_t^{\theta_1} \in \bigcap_{k=2}^n \mathfrak{L}_{\theta_k}\right) \frac{dt}{t} = \infty$$</li>
+                        <li>By the inductive hypothesis, $X \circ \Gamma^{\theta_1}$ immediately enters $\bigcap_{k=2}^n \mathfrak{L}_{\theta_k}$ (and thus the full intersection).</li>
+                        <li>Since $\Gamma^{\theta_1}$ is a subordinator, the original process $X$ also enters immediately. $\blacksquare$</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="mt-16 border-t border-slate-200 pt-8 text-center text-slate-400 text-xs">
+                <p><i class="fa-solid fa-book-open mr-1"></i> Interactive Web Application based on the research project "Corners of the Convex Hull of Lévy Processes" by Loïc Chaumont, Jorge González Cázares, and Aleksandar Mijatović.</p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const AppState = {
+            overviewData: { path: [], hull: [] },
+            subsampleData: { path: [], subsample: [] },
+            subsampleViewMode: 'both'
+        };
+
+        function generateRandomWalk(numSteps, volatility = 1) {
+            let path = [{x: 0, y: 0}];
+            let currentX = 0, currentY = 0;
+            for(let i=0; i<numSteps; i++){
+                let r = Math.pow(Math.random(), -0.7) * volatility; 
+                let theta = Math.random() * 2 * Math.PI;
+                currentX += r * Math.cos(theta);
+                currentY += r * Math.sin(theta);
+                path.push({x: currentX, y: currentY});
+            }
+            return path;
+        }
+
+        function computeConvexHull(points) {
+            if (points.length <= 3) return points;
+            const sorted = [...points].sort((a, b) => a.x === b.x ? a.y - b.y : a.x - b.x);
+            const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+            
+            let lower = [];
+            for (let i = 0; i < sorted.length; i++) {
+                while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], sorted[i]) <= 0) {
+                    lower.pop();
+                }
+                lower.push(sorted[i]);
+            }
+            
+            let upper = [];
+            for (let i = sorted.length - 1; i >= 0; i--) {
+                while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], sorted[i]) <= 0) {
+                    upper.pop();
+                }
+                upper.push(sorted[i]);
+            }
+            
+            upper.pop();
+            lower.pop();
+            return lower.concat(upper).concat([lower[0]]);
+        }
+
+        let hullChartInstance = null;
+        let subsampleChartInstances = {};
+        let bertoinChartInstance = null;
+
+        function initCharts() {
+            const ctxHull = document.getElementById('hullChart').getContext('2d');
+            hullChartInstance = new Chart(ctxHull, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        { label: 'Discrete Path X', data: [], backgroundColor: 'rgba(148, 163, 184, 0.4)', borderColor: 'transparent', pointRadius: 0.5, showLine: true, borderWidth: 0.5, borderColor: 'rgba(148, 163, 184, 0.2)', order: 2 },
+                        { label: 'Convex Hull', data: [], type: 'line', backgroundColor: 'rgba(13, 148, 136, 0.05)', borderColor: 'rgba(13, 148, 136, 0.8)', borderWidth: 1.5, pointRadius: 0, fill: true, order: 1 },
+                        { label: 'Direction 1', data: [], type: 'line', borderColor: '#e11d48', borderWidth: 1.5, pointRadius: 0, order: 0 },
+                        { label: 'Supporting Plane 1', data: [], type: 'line', borderColor: '#e11d48', borderDash: [5, 5], borderWidth: 1.5, pointRadius: 0, order: 0 },
+                        { label: 'Direction 2', data: [], type: 'line', borderColor: '#3b82f6', borderWidth: 1.5, pointRadius: 0, order: 0 },
+                        { label: 'Supporting Plane 2', data: [], type: 'line', borderColor: '#3b82f6', borderDash: [5, 5], borderWidth: 1.5, pointRadius: 0, order: 0 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: { 
+                        legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
+                        tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)' }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false }
+                    }
+                }
+            });
+
+            const subOpt = {
+                responsive: true, maintainAspectRatio: false, animation: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                scales: { x: { display: false }, y: { display: false } }
+            };
+            
+            const dsTemplate = [
+                { label: 'Path', data: [], borderColor: 'rgba(148, 163, 184, 0.4)', backgroundColor: 'rgba(148, 163, 184, 0.6)', pointRadius: 0.7, showLine: true, borderWidth: 0.7, order: 4 },
+                { label: 'Running Inf', data: [], borderColor: '#ea580c', backgroundColor: '#ea580c', pointRadius: 0.7, showLine: false, order: 3 }, // dark orange
+                { label: 'Future Inf', data: [], borderColor: '#e11d48', backgroundColor: '#e11d48', pointRadius: 0.7, showLine: false, order: 2 }, // crimson
+                { label: 'Path Hull', data: [], type: 'line', borderColor: '#000', borderWidth: 1.25, pointRadius: 0, fill: false, order: 1 }, // black
+                { label: 'Union Hull', data: [], type: 'line', borderColor: '#997950', borderWidth: 1.25, pointRadius: 0, fill: false, order: 0 } // dark brown
+            ];
+
+            subsampleChartInstances = {
+                global: new Chart(document.getElementById('subsampleGlobalChart').getContext('2d'), { type: 'scatter', data: { datasets: JSON.parse(JSON.stringify(dsTemplate)) }, options: JSON.parse(JSON.stringify(subOpt)) }),
+                zoom: new Chart(document.getElementById('subsampleZoomChart').getContext('2d'), { type: 'scatter', data: { datasets: JSON.parse(JSON.stringify(dsTemplate)) }, options: JSON.parse(JSON.stringify(subOpt)) }),
+                tx: new Chart(document.getElementById('subsampleTxChart').getContext('2d'), { type: 'scatter', data: { datasets: JSON.parse(JSON.stringify(dsTemplate)) }, options: JSON.parse(JSON.stringify(subOpt)) }),
+                ty: new Chart(document.getElementById('subsampleTyChart').getContext('2d'), { type: 'scatter', data: { datasets: JSON.parse(JSON.stringify(dsTemplate)) }, options: JSON.parse(JSON.stringify(subOpt)) })
+            };
+            
+            subsampleChartInstances.tx.data.datasets[3].hidden = true;
+            subsampleChartInstances.tx.data.datasets[4].hidden = true;
+            subsampleChartInstances.ty.data.datasets[3].hidden = true;
+            subsampleChartInstances.ty.data.datasets[4].hidden = true;
+
+            const ctxBertoin = document.getElementById('bertoinChart').getContext('2d');
+            bertoinChartInstance = new Chart(ctxBertoin, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        { label: 'Post-infimum', data: [], backgroundColor: 'rgba(148, 163, 184, 0.5)', borderColor: 'rgba(148, 163, 184, 0.5)', pointRadius: 0.75, showLine: true, borderWidth: 0.75, order: 3 },
+                        { label: 'Reversed Process', data: [], backgroundColor: 'rgba(14, 165, 233, 0.8)', borderColor: 'rgba(14, 165, 233, 0.8)', pointRadius: 0.75, showLine: true, borderWidth: 0.75, order: 2 },
+                        { label: 'Future Infimums', data: [], backgroundColor: 'rgba(225, 29, 72, 1)', borderColor: 'rgba(225, 29, 72, 1)', pointRadius: 0.75, showLine: true, borderWidth: 0.75, stepped: 'before', order: 1 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, animation: false,
+                    plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } }, tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)' } },
+                    scales: { x: { display: false }, y: { display: false } }
+                }
+            });
+        }
+
+        function updateHullData() {
+            const path = generateRandomWalk(4000, 2);
+            const hull = computeConvexHull(path);
+            
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            path.forEach(p => {
+                if (p.x < minX) minX = p.x;
+                if (p.x > maxX) maxX = p.x;
+                if (p.y < minY) minY = p.y;
+                if (p.y > maxY) maxY = p.y;
+            });
+            let pathSpan = Math.max(maxX - minX, maxY - minY);
+            let planeLen = pathSpan * 0.33; 
+            let arrowLen = pathSpan * 0.15; 
+
+            // Add safe fallbacks in case DOM layout isn't fully computed yet
+            let cw = hullChartInstance.canvas.clientWidth || 800;
+            let ch = hullChartInstance.canvas.clientHeight || 400;
+            let aspect = cw / ch; 
+            let centerX = (maxX + minX) / 2;
+            let centerY = (maxY + minY) / 2;
+            let hSpan = pathSpan / 2;
+            
+            if (aspect > 1) {
+                hullChartInstance.options.scales.x.min = centerX - hSpan * aspect;
+                hullChartInstance.options.scales.x.max = centerX + hSpan * aspect;
+                hullChartInstance.options.scales.y.min = centerY - hSpan;
+                hullChartInstance.options.scales.y.max = centerY + hSpan;
+            } else {
+                hullChartInstance.options.scales.x.min = centerX - hSpan;
+                hullChartInstance.options.scales.x.max = centerX + hSpan;
+                hullChartInstance.options.scales.y.min = centerY - hSpan / aspect;
+                hullChartInstance.options.scales.y.max = centerY + hSpan / aspect;
+            }
+
+            let th1 = {x: 0.5, y: 1}; 
+            let norm1 = Math.sqrt(th1.x**2 + th1.y**2); 
+            th1.x /= norm1; th1.y /= norm1; 
+            
+            let th2 = {x: 1, y: 0.5}; 
+            let norm2 = Math.sqrt(th2.x**2 + th2.y**2); 
+            th2.x /= norm2; th2.y /= norm2;
+
+            let m1 = Infinity, idx1 = 0;
+            let m2 = Infinity, idx2 = 0;
+            path.forEach((p, i) => {
+                let v1 = p.x*th1.x + p.y*th1.y; 
+                if(v1 < m1) { m1 = v1; idx1 = i; }
+                let v2 = p.x*th2.x + p.y*th2.y; 
+                if(v2 < m2) { m2 = v2; idx2 = i; }
+            });
+
+            let p1 = path[idx1];
+            // Anchor both lines at the point exposed by the red one (p1)
+            let p2 = path[idx1]; 
+
+            AppState.overviewData.path = path;
+            AppState.overviewData.hull = hull;
+            
+            hullChartInstance.data.datasets[0].data = path;
+            hullChartInstance.data.datasets[1].data = hull;
+            hullChartInstance.data.datasets[2].data = [p1, {x: p1.x + arrowLen*th1.x, y: p1.y + arrowLen*th1.y}];
+            hullChartInstance.data.datasets[3].data = [{x: p1.x - planeLen*th1.y, y: p1.y + planeLen*th1.x}, {x: p1.x + planeLen*th1.y, y: p1.y - planeLen*th1.x}];
+            hullChartInstance.data.datasets[4].data = [p2, {x: p2.x + arrowLen*th2.x, y: p2.y + arrowLen*th2.y}];
+            hullChartInstance.data.datasets[5].data = [{x: p2.x - planeLen*th2.y, y: p2.y + planeLen*th2.x}, {x: p2.x + planeLen*th2.y, y: p2.y - planeLen*th2.x}];
+            hullChartInstance.update();
+        }
+
+        function updateSubsampleData() {
+            let n = 20000;
+            let path = [{x:0, y:0}];
+            let cX = 0, cY = 0;
+            for(let i=0; i<n; i++) {
+                let r = Math.min(Math.pow(Math.random(), -0.6), 50) * 0.1 * (Math.random() > 0.5 ? 1 : -1); 
+                let theta = Math.random() * 2 * Math.PI;
+                cX += r * Math.cos(theta);
+                cY += r * Math.sin(theta);
+                path.push({x: cX, y: cY});
+            }
+            for(let i=0; i<=n; i++) { path[i].x += i * 0.0008; path[i].y += i * 0.0004; }
+            
+            let xmin_idx = 0;
+            let minXVal = Infinity;
+            for(let i=0; i<=n; i++) {
+                if(path[i].x < minXVal) { minXVal = path[i].x; xmin_idx = i; }
+            }
+            
+            let Ipre = [];
+            let curMin = Infinity;
+            for(let i=0; i<=xmin_idx; i++){
+                if(path[i].x <= curMin) {
+                    curMin = path[i].x;
+                    Ipre.push({idx: i, p: path[i]});
+                }
+            }
+            
+            let Ipost = [ {idx: xmin_idx, p: path[xmin_idx]} ];
+            let cur = xmin_idx;
+            while(cur < n) {
+                let mVal = Infinity, mIdx = cur + 1;
+                for(let i=cur+1; i<=n; i++) {
+                    if(path[i].x <= mVal) { mVal = path[i].x; mIdx = i; }
+                }
+                if(mIdx > n || mVal === Infinity) break;
+                Ipost.push({idx: mIdx, p: path[mIdx]});
+                cur = mIdx;
+            }
+
+            let hull = computeConvexHull(path);
+            let unionHull = computeConvexHull(Ipre.map(i=>i.p).concat(Ipost.map(i=>i.p)));
+            
+            let t_vs_x_path = path.map((p, i) => ({x: i, y: p.x}));
+            let t_vs_x_pre = Ipre.map(i => ({x: i.idx, y: i.p.x}));
+            let t_vs_x_post = Ipost.map(i => ({x: i.idx, y: i.p.x}));
+            
+            let t_vs_y_path = path.map((p, i) => ({x: i, y: p.y}));
+            let t_vs_y_pre = Ipre.map(i => ({x: i.idx, y: i.p.y}));
+            let t_vs_y_post = Ipost.map(i => ({x: i.idx, y: i.p.y}));
+
+            AppState.subsampleData.path = path;
+            AppState.subsampleData.pre = Ipre.map(i=>i.p);
+            AppState.subsampleData.post = Ipost.map(i=>i.p);
+            AppState.subsampleData.hull = hull;
+            AppState.subsampleData.unionHull = unionHull;
+            AppState.subsampleData.txPath = t_vs_x_path;
+            AppState.subsampleData.txPre = t_vs_x_pre;
+            AppState.subsampleData.txPost = t_vs_x_post;
+            AppState.subsampleData.tyPath = t_vs_y_path;
+            AppState.subsampleData.tyPre = t_vs_y_pre;
+            AppState.subsampleData.tyPost = t_vs_y_post;
+            
+            // Precision zoom tightly anchored on the global minimum
+            let maxXVal = -Infinity;
+            for (let i = 0; i < path.length; i++) { if (path[i].x > maxXVal) maxXVal = path[i].x; }
+            let xspan = Math.abs(maxXVal - minXVal);
+            
+            let zoomRadiusX = xspan * 0.15; 
+            let qxm = minXVal - zoomRadiusX * 0.2;
+            let qxp = minXVal + zoomRadiusX * 1.5;
+            
+            let y_at_min = path[xmin_idx].y;
+            let zoomRadiusY = zoomRadiusX;
+            let qym = y_at_min - zoomRadiusY;
+            let qyp = y_at_min + zoomRadiusY;
+
+            subsampleChartInstances.zoom.options.scales.x.min = qxm;
+            subsampleChartInstances.zoom.options.scales.x.max = qxp;
+            subsampleChartInstances.zoom.options.scales.y.min = Math.min(qym, qyp);
+            subsampleChartInstances.zoom.options.scales.y.max = Math.max(qym, qyp);
+
+            renderSubsampleChart();
+        }
+
+        function renderSubsampleChart() {
+            let hideOriginal = AppState.subsampleViewMode === 'subsampleOnly';
+            
+            ['global', 'zoom'].forEach(key => {
+                let chart = subsampleChartInstances[key];
+                chart.data.datasets[0].hidden = hideOriginal;
+                chart.data.datasets[3].hidden = hideOriginal;
+                chart.data.datasets[0].data = AppState.subsampleData.path;
+                chart.data.datasets[1].data = AppState.subsampleData.pre;
+                chart.data.datasets[2].data = AppState.subsampleData.post;
+                chart.data.datasets[3].data = AppState.subsampleData.hull.concat(AppState.subsampleData.hull[0]);
+                chart.data.datasets[4].data = AppState.subsampleData.unionHull.concat(AppState.subsampleData.unionHull[0]);
+                chart.update();
+            });
+
+            subsampleChartInstances.tx.data.datasets[0].hidden = hideOriginal;
+            subsampleChartInstances.tx.data.datasets[0].data = AppState.subsampleData.txPath;
+            subsampleChartInstances.tx.data.datasets[1].data = AppState.subsampleData.txPre;
+            subsampleChartInstances.tx.data.datasets[2].data = AppState.subsampleData.txPost;
+            subsampleChartInstances.tx.update();
+
+            subsampleChartInstances.ty.data.datasets[0].hidden = hideOriginal;
+            subsampleChartInstances.ty.data.datasets[0].data = AppState.subsampleData.tyPath;
+            subsampleChartInstances.ty.data.datasets[1].data = AppState.subsampleData.tyPre;
+            subsampleChartInstances.ty.data.datasets[2].data = AppState.subsampleData.tyPost;
+            subsampleChartInstances.ty.update();
+        }
+
+        function updateBertoinData() {
+            let path = [0];
+            let n = 10000;
+            for(let i=0; i<n; i++) {
+                let r = Math.pow(Math.random(), -0.7) * (Math.random() > 0.48 ? 1 : -1) + 0.05; 
+                path.push(path[i] + r);
+            }
+            
+            let minVal = Infinity, minIdx = 0;
+            for(let i=0; i<path.length; i++) {
+                if(path[i] < minVal) { minVal = path[i]; minIdx = i; }
+            }
+            
+            let postX = path.slice(minIdx).map(v => v - minVal);
+            
+            let futureInfIdxs = [];
+            let cur = 0;
+            while(cur < postX.length) {
+                let mVal = Infinity, mIdx = cur;
+                for(let i=cur; i<postX.length; i++) {
+                    if(postX[i] < mVal) { mVal = postX[i]; mIdx = i; }
+                }
+                futureInfIdxs.push(mIdx);
+                if(mIdx === cur && cur === postX.length - 1) break;
+                cur = mIdx + 1;
+            }
+            
+            let rx = [...postX];
+            for(let i=1; i<futureInfIdxs.length; i++) {
+                let start = futureInfIdxs[i-1];
+                let end = futureInfIdxs[i];
+                let sum = postX[start] + postX[end];
+                let segment = postX.slice(start, end+1).reverse();
+                for(let j=0; j<segment.length; j++) {
+                    rx[start+j] = sum - segment[j];
+                }
+            }
+            
+            let t_post = postX.map((v, i) => ({x: i, y: v}));
+            let t_rx = rx.map((v, i) => ({x: i, y: v}));
+            let t_fut = futureInfIdxs.map(i => ({x: i, y: postX[i]}));
+            
+            bertoinChartInstance.data.datasets[0].data = t_post;
+            bertoinChartInstance.data.datasets[1].data = t_rx;
+            bertoinChartInstance.data.datasets[2].data = t_fut;
+            bertoinChartInstance.update();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            updateSubsampleData();
+            updateBertoinData();
+            
+            setTimeout(() => {
+                try { updateHullData(); } catch(e) { console.error(e); } // Auto-generate 2D Path & Convex Hull immediately with correct dimensions
+                try { renderFractalExamples(); } catch(e) { console.error(e); }
+                try { renderCornerBody(); } catch(e) { console.error(e); }
+                try { renderSingularBody(); } catch(e) { console.error(e); }
+                try { if (typeof renderGeneral3DHull === 'function') renderGeneral3DHull(); } catch(e) { console.error(e); }
+            }, 300);
+
+            document.getElementById('btn-generate-hull').addEventListener('click', updateHullData);
+            document.getElementById('btn-regen-subsample').addEventListener('click', updateSubsampleData);
+            document.getElementById('btn-regen-bertoin').addEventListener('click', updateBertoinData);
+            document.getElementById('btn-regen-3d-hull').addEventListener('click', renderGeneral3DHull);
+            
+            document.getElementById('btn-toggle-subsample').addEventListener('click', (e) => {
+                AppState.subsampleViewMode = AppState.subsampleViewMode === 'both' ? 'subsampleOnly' : 'both';
+                const btn = e.currentTarget;
+                if(AppState.subsampleViewMode === 'subsampleOnly') {
+                    btn.innerHTML = '<i class="fa-solid fa-eye mr-1"></i> Show Full Path';
+                    btn.classList.replace('bg-slate-700', 'bg-teal-600');
+                    btn.classList.replace('hover:bg-slate-800', 'hover:bg-teal-700');
+                } else {
+                    btn.innerHTML = '<i class="fa-solid fa-eye-slash mr-1"></i> Subsample Only';
+                    btn.classList.replace('bg-teal-600', 'bg-slate-700');
+                    btn.classList.replace('hover:bg-teal-700', 'hover:bg-slate-800');
+                }
+                renderSubsampleChart();
+            });
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('main section');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    document.getElementById(targetId).scrollIntoView({ behavior: 'smooth' });
+                    
+                    const sidebar = document.getElementById('sidebar');
+                    if(window.innerWidth < 768 && !sidebar.classList.contains('hidden')){
+                        sidebar.classList.add('hidden');
+                    }
+                });
+            });
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href').substring(1) === entry.target.id) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, { root: null, rootMargin: '-10% 0px -80% 0px', threshold: 0 });
+
+            sections.forEach(section => observer.observe(section));
+
+            document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.toggle('hidden');
+                sidebar.classList.toggle('absolute');
+                sidebar.classList.toggle('z-50');
+            });
+        });
+
+        function renderFractalExamples() {
+            let cx = [0, 1];
+            let cy = [0, 1];
+            for(let iter=0; iter<6; iter++) {
+                let nx = [], ny = [];
+                for(let i=0; i<cx.length-1; i++) {
+                    let x1 = cx[i], x2 = cx[i+1];
+                    let y1 = cy[i], y2 = cy[i+1];
+                    if (y1 === y2) { 
+                        nx.push(x1); ny.push(y1);
+                    } else {
+                        let d = (x2 - x1) / 3;
+                        let midY = (y1 + y2) / 2;
+                        nx.push(x1); ny.push(y1);
+                        nx.push(x1 + d); ny.push(midY);
+                        nx.push(x2 - d); ny.push(midY);
+                    }
+                }
+                nx.push(cx[cx.length-1]); ny.push(cy[cy.length-1]);
+                cx = nx; cy = ny;
+            }
+            
+            let c_shifted = cy.map(y => 2 * y - 1);
+            let c_int = [0];
+            for(let i=1; i<cx.length; i++) {
+                let dx = cx[i] - cx[i-1];
+                let avgY = (c_shifted[i] + c_shifted[i-1])/2;
+                c_int.push(c_int[i-1] + dx * avgY);
+            }
+            
+            Plotly.newPlot('plotly-cantor', [
+                { x: cx, y: c_shifted, name: 'Shifted Cantor', line: {color: '#e11d48', shape: 'linear'} },
+                { x: cx, y: c_int, name: 'Integrated Cantor', line: {color: '#3b82f6', shape: 'linear'} }
+            ], {
+                margin: {l:40, r:20, b:40, t:20},
+                legend: {orientation: 'h', y: 1.1},
+                xaxis: {title: 'x'}, yaxis: {title: 'y'}
+            }, {responsive: true});
+
+            let sx = [], sy = [];
+            let cur = {x: 0, y: 0};
+            let corners = [{x: 0, y: 0}, {x: 1, y: 0}, {x: 0.5, y: Math.sqrt(3)/2}];
+            for(let i=0; i<15000; i++) {
+                let c = corners[Math.floor(Math.random() * 3)];
+                cur.x = (cur.x + c.x) / 2;
+                cur.y = (cur.y + c.y) / 2;
+                if(i > 10) {
+                    sx.push(cur.x); sy.push(cur.y);
+                }
+            }
+            Plotly.newPlot('plotly-sierpinski', [
+                { x: sx, y: sy, mode: 'markers', marker: {size: 1.5, color: '#0ea5e9'}, type: 'scatter' }
+            ], {
+                margin: {l:20, r:20, b:20, t:20},
+                xaxis: {visible: false}, yaxis: {visible: false, scaleanchor: 'x', scaleratio: 1},
+                showlegend: false
+            }, {responsive: true});
+        }
+
+        function renderCornerBody() {
+            let x = [], y = [], z = [];
+            let steps = 60;
+            for (let i = 0; i <= steps; i++) { 
+                x.push(-1.5 + (3.0 * i / steps)); 
+                y.push(-1.5 + (3.0 * i / steps)); 
+            }
+            for (let j = 0; j <= steps; j++) {
+                let row = [];
+                for (let i = 0; i <= steps; i++) {
+                    row.push(Math.max(Math.sqrt(x[i]*x[i] + y[j]*y[j]), Math.SQRT2 * Math.abs(x[i])));
+                }
+                z.push(row);
+            }
+
+            let traces = [{
+                x: x, y: y, z: z,
+                type: 'surface', colorscale: 'Viridis', opacity: 0.85, showscale: false
+            }];
+
+            let p_sm = [0.5, 1.0, Math.sqrt(5)/2];
+            let n_sm = [p_sm[0]/p_sm[2], p_sm[1]/p_sm[2], -1.0];
+            let n_sm_len = Math.sqrt(n_sm[0]**2 + n_sm[1]**2 + n_sm[2]**2);
+            let r_sm = [p_sm[0] + (n_sm[0]/n_sm_len)*0.8, p_sm[1] + (n_sm[1]/n_sm_len)*0.8, p_sm[2] + (n_sm[2]/n_sm_len)*0.8];
+            traces.push({
+                x: [p_sm[0], r_sm[0]], y: [p_sm[1], r_sm[1]], z: [p_sm[2], r_sm[2]],
+                mode: 'lines+markers', line: {color: 'blue', width: 2}, marker: {size: 2, color: 'blue'}, type: 'scatter3d', name: '1D Normal'
+            });
+
+            let p_cr = [1.0, 1.0, Math.SQRT2];
+            let ray1 = [1/Math.SQRT2, 1/Math.SQRT2, -1];
+            let ray2 = [Math.SQRT2, 0, -1];
+            let r1_len = Math.sqrt(ray1[0]**2 + ray1[1]**2 + ray1[2]**2);
+            let r2_len = Math.sqrt(ray2[0]**2 + ray2[1]**2 + ray2[2]**2);
+            let r1_end = [p_cr[0] + (ray1[0]/r1_len)*0.8, p_cr[1] + (ray1[1]/r1_len)*0.8, p_cr[2] + (ray1[2]/r1_len)*0.8];
+            let r2_end = [p_cr[0] + (ray2[0]/r2_len)*0.8, p_cr[1] + (ray2[1]/r2_len)*0.8, p_cr[2] + (ray2[2]/r2_len)*0.8];
+            traces.push({
+                x: [p_cr[0], r1_end[0], r2_end[0]], y: [p_cr[1], r1_end[1], r2_end[1]], z: [p_cr[2], r1_end[2], r2_end[2]],
+                i: [0], j: [1], k: [2], type: 'mesh3d', color: 'red', opacity: 0.5, name: '2D Normal'
+            });
+            traces.push({
+                x: [p_cr[0], r1_end[0], null, p_cr[0], r2_end[0]], y: [p_cr[1], r1_end[1], null, p_cr[1], r2_end[1]], z: [p_cr[2], r1_end[2], null, p_cr[2], r2_end[2]],
+                mode: 'lines', line: {color: 'darkred', width: 3}, type: 'scatter3d', showlegend: false
+            });
+
+            let cone_x = [0], cone_y = [0], cone_z = [0];
+            let csteps = 32;
+            for(let i=0; i<=csteps; i++) {
+                let theta = 2 * Math.PI * i / csteps;
+                let vx, vy, vz = -1.0;
+                if(Math.abs(Math.cos(theta)) >= Math.abs(Math.sin(theta))) {
+                    vx = Math.SQRT2 * Math.sign(Math.cos(theta)); vy = 0;
+                } else {
+                    vx = Math.cos(theta); vy = Math.sin(theta);
+                }
+                let vlen = Math.sqrt(vx**2 + vy**2 + vz**2);
+                cone_x.push((vx/vlen)*0.7); cone_y.push((vy/vlen)*0.7); cone_z.push((vz/vlen)*0.7);
+            }
+            let ci = [], cj = [], ck = [];
+            for(let i=1; i<=csteps; i++) { ci.push(0); cj.push(i); ck.push(i+1); }
+            traces.push({
+                x: cone_x, y: cone_y, z: cone_z,
+                i: ci, j: cj, k: ck, type: 'mesh3d', color: 'purple', opacity: 0.6, name: '3D Normal'
+            });
+
+            Plotly.newPlot('plotly-corner-body', traces, {
+                margin: {l:0, r:0, b:0, t:0},
+                scene: { aspectmode: 'data', camera: {eye: {x: 1.2, y: 1.5, z: 0.8}} },
+                showlegend: false
+            }, {responsive: true});
+        }
+
+        function renderSingularBody() {
+            let alpha = 0.5;
+            let x = [], y = [], z = [];
+            let steps = 60;
+            for (let i = 0; i <= steps; i++) { 
+                x.push(-1.5 + (3.0 * i / steps)); 
+                y.push(-1.5 + (3.0 * i / steps)); 
+            }
+            for (let j = 0; j <= steps; j++) {
+                let row = [];
+                for (let i = 0; i <= steps; i++) {
+                    row.push(Math.sqrt(y[j]*y[j] + Math.pow(Math.max(Math.abs(x[i]) - alpha, 0), 4)));
+                }
+                z.push(row);
+            }
+
+            let traces = [{
+                x: x, y: y, z: z, type: 'surface', colorscale: 'Viridis', opacity: 0.85, showscale: false
+            }];
+
+            traces.push({
+                x: [-alpha, alpha], y: [0, 0], z: [0, 0],
+                mode: 'lines', line: {color: 'red', width: 3}, type: 'scatter3d', name: 'Singular Line'
+            });
+
+            let pt1 = [0.0, 0.8, 0.8];
+            let n1_end = [0.0, 0.8 + 0.6, 0.8 - 0.6];
+            traces.push({
+                x: [pt1[0], n1_end[0]], y: [pt1[1], n1_end[1]], z: [pt1[2], n1_end[2]],
+                mode: 'lines+markers', line: {color: 'blue', width: 3}, marker: {size: 3, color: 'blue'}, type: 'scatter3d'
+            });
+
+            traces.push({
+                x: [0, 0, 0], y: [0, 0.8, -0.8], z: [0, -0.8, -0.8],
+                i: [0], j: [1], k: [2], type: 'mesh3d', color: 'darkred', opacity: 0.5
+            });
+
+            let x3 = 0.85, y3 = 0.1;
+            let z3 = Math.sqrt(y3**2 + Math.pow(Math.max(Math.abs(x3) - alpha, 0), 4));
+            let df_dx = 0, df_dy = 0;
+            if (Math.abs(x3) <= alpha) {
+                df_dx = 0; df_dy = Math.sign(y3);
+            } else {
+                let denom = Math.sqrt(y3**2 + Math.pow(Math.abs(x3) - alpha, 4));
+                df_dx = (2.0 * Math.pow(Math.abs(x3) - alpha, 3) * Math.sign(x3)) / denom;
+                df_dy = y3 / denom;
+            }
+            let n3_len = Math.sqrt(df_dx**2 + df_dy**2 + 1);
+            let n3_end = [x3 + (df_dx/n3_len)*0.85, y3 + (df_dy/n3_len)*0.85, z3 + (-1/n3_len)*0.85];
+
+            traces.push({
+                x: [x3, n3_end[0]], y: [y3, n3_end[1]], z: [z3, n3_end[2]],
+                mode: 'lines+markers', line: {color: 'purple', width: 3}, marker: {size: 3, color: 'purple'}, type: 'scatter3d'
+            });
+
+            Plotly.newPlot('plotly-singular-body', traces, {
+                margin: {l:0, r:0, b:0, t:0},
+                scene: { aspectmode: 'data', camera: {eye: {x: 1.2, y: 1.5, z: 0.8}},
+                         xaxis: {title: 'x'}, yaxis: {title: 'y'}, zaxis: {title: 'z'} },
+                showlegend: false
+            }, {responsive: true});
+        }
+
+        function renderGeneral3DHull() {
+            let n = 80000;
+            // Use TypedArrays for massive performance boost and memory safety
+            let S = new Float64Array(n + 1);
+            let X1 = new Float64Array(n + 1);
+            let X2 = new Float64Array(n + 1);
+            
+            S[0] = 0; X1[0] = 0; X2[0] = 0;
+            let alpha = 1.8;
+            
+            let minX = 0, maxX = 0, minY = 0, maxY = 0, minZ = 0, maxZ = 0;
+            
+            for(let i=0; i<n; i++) {
+                let rS = Math.pow(Math.random(), -1.0/alpha) * 0.02;
+                S[i+1] = S[i] + rS;
+                
+                let r1 = Math.pow(Math.random(), -1.0/alpha) * 0.05 * (Math.random() > 0.5 ? 1 : -1);
+                let r2 = Math.pow(Math.random(), -1.0/alpha) * 0.05 * (Math.random() > 0.5 ? 1 : -1);
+                X1[i+1] = X1[i] + r1;
+                X2[i+1] = X2[i] + r2;
+
+                if (S[i+1] < minX) minX = S[i+1]; if (S[i+1] > maxX) maxX = S[i+1];
+                if (X1[i+1] < minY) minY = X1[i+1]; if (X1[i+1] > maxY) maxY = X1[i+1];
+                if (X2[i+1] < minZ) minZ = X2[i+1]; if (X2[i+1] > maxZ) maxZ = X2[i+1];
+            }
+
+            let maxSpan = Math.max(maxX - minX, maxY - minY, maxZ - minZ) || 1;
+
+            // Exhaustive directional search for extreme points using a dense spherical cover
+            let c_set = new Set([0, n]);
+            let num_dirs = 5000;
+            let phi = Math.PI * (3 - Math.sqrt(5));
+            for(let i=0; i<num_dirs; i++){
+                let y = 1 - (i / (num_dirs - 1)) * 2;
+                let radius = Math.sqrt(1 - y*y);
+                let theta = phi * i;
+                let dx = Math.cos(theta)*radius, dy = y, dz = Math.sin(theta)*radius;
+                
+                let max_d = -Infinity, max_i = 0;
+                let min_d = Infinity, min_i = 0;
+                for(let j=0; j<=n; j++) {
+                    let d = S[j]*dx + X1[j]*dy + X2[j]*dz;
+                    if(d > max_d) { max_d = d; max_i = j; }
+                    if(d < min_d) { min_d = d; min_i = j; }
+                }
+                c_set.add(max_i);
+                c_set.add(min_i);
+            }
+            
+            // Extreme points representing the convex hull boundary
+            let E = Array.from(c_set).map(idx => ({x: S[idx], y: X1[idx], z: X2[idx]}));
+            let n_e = E.length;
+            
+            let edge_x = [], edge_y = [], edge_z = [];
+            let tol2 = 1e-10 * maxSpan * maxSpan;
+
+            // Exhaustive edge validation natively in JS using 2D convex projection logic
+            for (let i = 0; i < n_e; i++) {
+                for (let j = i + 1; j < n_e; j++) {
+                    let dx = E[j].x - E[i].x;
+                    let dy = E[j].y - E[i].y;
+                    let dz = E[j].z - E[i].z;
+                    let len = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                    if (len < 1e-7 * maxSpan) continue;
+
+                    let ux = dx/len, uy = dy/len, uz = dz/len;
+
+                    // Form an orthogonal basis spanning the normal plane
+                    let wx = 1, wy = 0, wz = 0;
+                    if (Math.abs(ux) > 0.9) { wx = 0; wy = 1; }
+
+                    let xx = wy*uz - wz*uy;
+                    let xy = wz*ux - wx*uz;
+                    let xz = wx*uy - wy*ux;
+                    let xlen = Math.sqrt(xx*xx + xy*xy + xz*xz);
+                    xx /= xlen; xy /= xlen; xz /= xlen;
+
+                    let yx = uy*xz - uz*xy;
+                    let yy = uz*xx - ux*xz;
+                    let yz = ux*xy - uy*xx;
+
+                    let angles = [];
+                    for (let m = 0; m < n_e; m++) {
+                        if (m === i || m === j) continue;
+                        let mx = E[m].x - E[i].x;
+                        let my = E[m].y - E[i].y;
+                        let mz = E[m].z - E[i].z;
+
+                        let px = mx*xx + my*xy + mz*xz;
+                        let py = mx*yx + my*yy + mz*yz;
+
+                        // Only consider points strictly non-collinear with the candidate edge
+                        if (px*px + py*py > tol2) {
+                            angles.push(Math.atan2(py, px));
+                        }
+                    }
+
+                    if (angles.length === 0) {
+                        edge_x.push(E[i].x, E[j].x, null);
+                        edge_y.push(E[i].y, E[j].y, null);
+                        edge_z.push(E[i].z, E[j].z, null);
+                        continue;
+                    }
+
+                    angles.sort((a,b) => a - b);
+                    let max_gap = angles[0] + 2*Math.PI - angles[angles.length - 1];
+                    for (let m = 0; m < angles.length - 1; m++) {
+                        let gap = angles[m+1] - angles[m];
+                        if (gap > max_gap) max_gap = gap;
+                    }
+
+                    // For (E[i], E[j]) to be a bounding edge, the 2D projection of all other points 
+                    // onto the normal plane MUST lie strictly within a half-plane
+                    // This means the maximum angular gap must be >= Pi
+                    if (max_gap >= Math.PI - 1e-5) {
+                        edge_x.push(E[i].x, E[j].x, null);
+                        edge_y.push(E[i].y, E[j].y, null);
+                        edge_z.push(E[i].z, E[j].z, null);
+                    }
+                }
+            }
+            
+            let traces = [
+                {
+                    x: Array.from(S), y: Array.from(X1), z: Array.from(X2),
+                    mode: 'lines+markers',
+                    marker: {size: 1, color: 'rgba(100, 116, 139, 0.8)'},
+                    line: {color: 'rgba(100, 116, 139, 0.4)', width: 1},
+                    type: 'scatter3d',
+                    name: 'Path X_t'
+                },
+                {
+                    // Render the hull strictly based on the extracted extreme points E
+                    x: E.map(p=>p.x), y: E.map(p=>p.y), z: E.map(p=>p.z),
+                    alphahull: 0,
+                    opacity: 0.15, // Made clearer and more transparent
+                    color: '#0ea5e9',
+                    type: 'mesh3d',
+                    flatshading: true,
+                    lighting: {facenormalsepsilon: 0, ambient: 0.8},
+                    name: 'Convex Hull'
+                },
+                {
+                    x: edge_x, y: edge_y, z: edge_z,
+                    mode: 'lines',
+                    line: {color: '#000000', width: 1.5}, // Exact triangulated edges extracted perfectly
+                    type: 'scatter3d',
+                    name: 'Hull Edges',
+                    hoverinfo: 'none'
+                }
+            ];
+            
+            Plotly.newPlot('plotly-general-3d-hull', traces, {
+                margin: {l:0, r:0, b:0, t:0},
+                scene: {
+                    xaxis: {title: 'S (Time-like)'}, yaxis: {title: 'X1'}, zaxis: {title: 'X2'},
+                    camera: {eye: {x: 1.5, y: 1.5, z: 1.2}}
+                },
+                showlegend: false
+            }, {responsive: true});
+        }
+    </script>
+</body>
+</html>
