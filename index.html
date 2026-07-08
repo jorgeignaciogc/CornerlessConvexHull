@@ -281,7 +281,7 @@
                         <div class="bg-slate-50 p-3 rounded border border-slate-200 overflow-x-auto">
                             $$\mathfrak{N}(x) := \{\theta \in \mathbb{R}^d_0 : H \subset x + \mathrm{cl}\,\mathfrak{L}_\theta\} \cup \{0\}$$
                         </div>
-                        <p>where $\mathfrak{L}_\theta := \{y \in \mathbb{R}^d : \langle \theta, y \rangle > 0\}$ denotes the positive half-space in the direction of $\theta\in\mathbb{R}^d_0:=\mathbb{R}^d\setminus\{0\}$. Similarly, each $\theta\in\mathbb{R}^d_0$ <strong>exposes</strong> a <strong>face</strong>:</p>
+                        <p>where $\mathfrak{L}_\theta := \{y \in \mathbb{R}^d : \langle \theta, y \rangle > 0\}$ is the positive half-space with direction $\theta\in\mathbb{R}^d_0:=\mathbb{R}^d\setminus\{0\}$. Similarly, each $\theta\in\mathbb{R}^d_0$ <strong>exposes</strong> a <strong>face</strong>:</p>
                         <div class="bg-slate-50 p-3 rounded border border-slate-200 overflow-x-auto text-center">
                             $$\mathfrak{F}_\theta := \Big\{x \in H : \langle \theta, x \rangle = I_\theta:=\inf_{y\in H}\langle\theta,y\rangle\Big\}$$
                         </div>
@@ -466,6 +466,42 @@
                 </div>
             </div>
 
+            <div class="mb-10 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h3 class="text-xl font-bold text-slate-800 mb-4 serif border-b pb-2"><i class="fa-solid fa-vector-square text-rose-500 mr-2"></i> Geometric Separation in $\mathbb{R}^3$</h3>
+                <p class="text-base text-slate-700 mb-6">If a point lies in $\mathfrak{L}_\theta\cap\mathfrak{L}_{-\theta_1}\cap\mathfrak{L}_{-\theta_2}$, then for every positive combination $\theta'=\lambda_1\theta_1+\lambda_2\theta_2$ (with $\lambda_i > 0$), the point necessarily lies in $\mathfrak{L}_{-\theta'}$. Here we represent the wedge $\mathfrak{L}_{-\theta_1}\cap\mathfrak{L}_{-\theta_2}$ in <span class="font-bold text-green-600">green</span> and the bounding plane of the half-space $\mathfrak{L}_{-\theta'}$ in <span class="font-bold text-rose-500">pink</span>. Notice how the pink boundary never crosses the interior of the green wedge.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="col-span-1 space-y-4 bg-slate-50 p-4 rounded-lg border border-slate-200 text-sm">
+                        <div>
+                            <p class="font-bold text-slate-800 mb-1">Direction $\theta = (0, 0, 1)$</p>
+                            <p class="text-xs text-slate-500">Fixed direction exposing the face.</p>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800 mb-1">Direction $\theta_1$ (defines $\mathfrak{L}_{-\theta_1}$)</p>
+                            <div class="flex gap-2">
+                                <input type="number" id="geo_t1x" value="1" step="0.1" class="w-full p-1 border rounded bg-white" onchange="drawGeoSep()" oninput="drawGeoSep()">
+                                <input type="number" id="geo_t1y" value="0" step="0.1" class="w-full p-1 border rounded bg-white" onchange="drawGeoSep()" oninput="drawGeoSep()">
+                                <input type="number" id="geo_t1z" value="-0.2" step="0.1" class="w-full p-1 border rounded bg-white" onchange="drawGeoSep()" oninput="drawGeoSep()">
+                            </div>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800 mb-1">Direction $\theta_2$ (defines $\mathfrak{L}_{-\theta_2}$)</p>
+                            <div class="flex gap-2">
+                                <input type="number" id="geo_t2x" value="0" step="0.1" class="w-full p-1 border rounded bg-white" onchange="drawGeoSep()" oninput="drawGeoSep()">
+                                <input type="number" id="geo_t2y" value="1" step="0.1" class="w-full p-1 border rounded bg-white" onchange="drawGeoSep()" oninput="drawGeoSep()">
+                                <input type="number" id="geo_t2z" value="-0.2" step="0.1" class="w-full p-1 border rounded bg-white" onchange="drawGeoSep()" oninput="drawGeoSep()">
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-slate-200">
+                            <p class="font-bold text-rose-700 mb-1">Weight $\lambda_2$: <span id="geo_l2_val">1.00</span></p>
+                            <input type="range" id="geo_l2" min="0.05" max="20" step="0.05" value="1" class="w-full accent-rose-600" oninput="drawGeoSep()">
+                        </div>
+                    </div>
+                    <div class="col-span-2 relative h-[400px] border border-slate-200 rounded-lg bg-white overflow-hidden" id="geoSepContainer">
+                        <div id="geoSepPlotly" class="absolute top-0 left-0 w-full h-full"></div>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-slate-100 pb-4">
                     <div>
@@ -623,8 +659,7 @@
                     <p><strong class="text-slate-800">Base Case $n=1$:</strong> Classical Rogozin's criterion: $\langle\theta_1,X\rangle$ is a 1D Lévy process that immediately becomes positive.</p>
                     <p><strong class="text-slate-800">Inductive Step:</strong> Suppose true for $n-1$.</p>
                     <ol class="list-decimal pl-5 space-y-2 mt-2">
-                        <li>By Rogozin, $Y := \langle\theta_1, X\rangle$ enters $(0, \infty)$ immediately because $\bigcap_{k=1}^n \mathfrak{L}_{\theta_k}\subset\mathfrak{L}_{\theta_1}$ and hence 
-                            $$\int_0^1\mathbb{P}(\langle \theta_1,X_t\rangle>0)\frac{dt}{t}=\infty.$$</li>
+                        <li>By Rogozin, $Y := \langle\theta_1, X\rangle$ enters $(0, \infty)$ immediately.</li>
                         <li>Fristedt's theorem ensures $X \circ \Gamma^{\theta_1}$ is a Lévy process. Crucially, this Lévy process is <strong>immediately active</strong> (i.e., $\Gamma^{\theta_1}$ is a subordinator), which is important because immediate events are still immediate even after time-changing, which would not be the case if the regularity of Step 1 failed.</li>
                         <li>The ABCD identity gives: $$\int_0^1 \mathbb{P}\left(X \circ \Gamma_t^{\theta_1} \in \bigcap_{k=2}^n \mathfrak{L}_{\theta_k}\right) \frac{dt}{t} = \infty$$</li>
                         <li>By the inductive hypothesis, $X \circ \Gamma^{\theta_1}$ immediately enters $\bigcap_{k=2}^n \mathfrak{L}_{\theta_k}$ (and thus the full intersection).</li>
@@ -635,6 +670,27 @@
             
             <div class="mt-16 border-t border-slate-200 pt-8 text-center text-slate-400 text-sm">
                 <p><i class="fa-solid fa-book-open mr-1"></i> Interactive presentation based on the research project "Corners of the Convex Hull of Lévy Processes" by Loïc Chaumont, Jorge González Cázares, and Aleksandar Mijatović.</p>
+            </div>
+        </section>
+
+        <section id="references" class="mb-24 scroll-mt-24">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-900 mt-2 mb-4 serif border-b border-slate-200 pb-4">References</h2>
+            </div>
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <ul class="list-none space-y-4 text-sm text-slate-600">
+                    <li class="flex items-start"><i class="fa-solid fa-file-lines text-slate-400 mt-1 mr-3"></i><span><b>Alexander, R., & Eldan, R. (2019).</b> Cone points of Brownian motion in arbitrary dimension.<i> The Annals of Probability</i>, 47(5), 3143-3169.</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-file-lines text-slate-400 mt-1 mr-3"></i><span><b>Bertoin, J. (1993).</b> Splitting at the infimum and excursions in half-lines for random walks and Lévy processes. <i>Stochastic Processes and their Applications</i>, 47(1), 17-35.</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-file-lines text-slate-400 mt-1 mr-3"></i><span><b>Burdzy, K. (1985).</b> Brownian paths and cones. <i>The Annals of Probability</i>, 13(3), 1006-1010.</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-file-lines text-slate-400 mt-1 mr-3"></i><span><b>Burdzy, K., & Kulczycki, T. (2003).</b> Stable processes have thorns. <i>The Annals of Probability</i>, 31(1), 170-194.</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-file-lines text-slate-400 mt-1 mr-3"></i><span><b>Cranston, M., Hsu, P., & March, P. (1989).</b> Smoothness of the convex hull of planar Brownian motion. <i>The Annals of Probability</i>, 17(1), 144-150.</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-file-lines text-slate-400 mt-1 mr-3"></i><span><b>El Bachir, M. (1983).</b> <i>L'enveloppe convexe du mouvement brownien</i>. PhD Thesis, Université Paul Sabatier.</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-file-lines text-slate-400 mt-1 mr-3"></i><span><b>Evans, S. N. (1985).</b> On the Hausdorff dimension of Brownian cone points. <i>Mathematical Proceedings of the Cambridge Philosophical Society</i>, 98(2), 343-353.</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-file-lines text-slate-400 mt-1 mr-3"></i><span><b>González Cázares, J., Kramer-Bang, S., & Mijatović, A. (2024).</b> Convex hulls of one-dimensional Lévy processes. <i>Annales de l’Institut Henri Poincaré (B) Probability and Statistics</i>, 60(4), 2352–2381.</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-file-lines text-slate-400 mt-1 mr-3"></i><span><b>Greenwood, P., & Pitman, J. (1980).</b> Fluctuation identities for Lévy processes and splitting at the maximum. <i>Advances in Applied Probability</i>, 12(4), 893-902.</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-file-lines text-slate-400 mt-1 mr-3"></i><span><b>Lévy, P. (1948).</b> <i>Processus stochastiques et mouvement brownien</i>. Gauthier-Villars, Paris.</span></li>
+                    <li class="flex items-start"><i class="fa-solid fa-file-lines text-slate-400 mt-1 mr-3"></i><span><b>Tamura, Y., & Tanaka, H. (2002).</b> On a fluctuation identity for multidimensional Lévy processes. <i>Tokyo Journal of Mathematics</i>, 25(2), 363-380.</span></li>
+                </ul>
             </div>
         </section>
     </main>
@@ -1007,7 +1063,12 @@
                 try { renderCornerBody(); } catch(e) { console.error(e); }
                 try { renderSingularBody(); } catch(e) { console.error(e); }
                 try { if (typeof renderGeneral3DHull === 'function') renderGeneral3DHull(); } catch(e) { console.error(e); }
+                try { drawGeoSep(); } catch(e) { console.error(e); }
             }, 300);
+            
+            window.addEventListener('resize', () => {
+                try { drawGeoSep(); } catch(e) { console.error(e); }
+            });
 
             document.getElementById('btn-generate-hull').addEventListener('click', updateHullData);
             document.getElementById('btn-regen-subsample').addEventListener('click', updateSubsampleData);
@@ -1426,6 +1487,132 @@
                     xaxis: {title: 'S (Time-like)'}, yaxis: {title: 'X1'}, zaxis: {title: 'X2'},
                     camera: {eye: {x: 1.5, y: 1.5, z: 1.2}}
                 },
+                showlegend: false
+            }, {responsive: true});
+        }
+
+        function drawGeoSep() {
+            const t1x = parseFloat(document.getElementById('geo_t1x').value) || 0;
+            const t1y = parseFloat(document.getElementById('geo_t1y').value) || 0;
+            const t1z = parseFloat(document.getElementById('geo_t1z').value) || 0;
+
+            const t2x = parseFloat(document.getElementById('geo_t2x').value) || 0;
+            const t2y = parseFloat(document.getElementById('geo_t2y').value) || 0;
+            const t2z = parseFloat(document.getElementById('geo_t2z').value) || 0;
+
+            const l1 = 1;
+            const l2 = parseFloat(document.getElementById('geo_l2').value) || 1;
+
+            document.getElementById('geo_l2_val').innerText = l2.toFixed(2);
+
+            const th = [0, 0, 1];
+            const t1 = [t1x, t1y, t1z];
+            const t2 = [t2x, t2y, t2z];
+            const tp = [l1*t1x + l2*t2x, l1*t1y + l2*t2y, l1*t1z + l2*t2z];
+
+            const nt1 = [-t1x, -t1y, -t1z];
+            const nt2 = [-t2x, -t2y, -t2z];
+            const ntp = [-tp[0], -tp[1], -tp[2]];
+
+            const dot = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+            const cross = (a, b) => [
+                a[1]*b[2] - a[2]*b[1],
+                a[2]*b[0] - a[0]*b[2],
+                a[0]*b[1] - a[1]*b[0]
+            ];
+            const normalize = (a) => { let l=Math.sqrt(dot(a,a))||1; return [a[0]/l, a[1]/l, a[2]/l]; };
+
+            // Green Wedge: Intersection of L_{-t1} and L_{-t2}
+            let gx=[], gy=[], gz=[];
+            gx.push(0); gy.push(0); gz.push(0); 
+            let phi = Math.PI * (3 - Math.sqrt(5));
+            for(let i=0; i<3000; i++){
+                let y = 1 - (i / 2999) * 2;
+                let r = Math.sqrt(1 - y*y);
+                let theta = phi * i;
+                let p = [Math.cos(theta)*r * 1.5, y * 1.5, Math.sin(theta)*r * 1.5];
+                if(dot(p, nt1) >= 0 && dot(p, nt2) >= 0) {
+                    gx.push(p[0]); gy.push(p[1]); gz.push(p[2]);
+                }
+            }
+
+            let traces = [];
+
+            if (gx.length > 4) {
+                traces.push({
+                    type: 'mesh3d',
+                    x: gx, y: gy, z: gz,
+                    alphahull: 0,
+                    opacity: 0.3,
+                    color: '#22c55e', 
+                    name: 'L_{-θ₁} ∩ L_{-θ₂}'
+                });
+            }
+
+            // Normal plane to theta (Z=0)
+            traces.push({
+                type: 'mesh3d',
+                x: [-2, 2, 2, -2],
+                y: [-2, -2, 2, 2],
+                z: [0, 0, 0, 0],
+                i: [0, 0], j: [1, 2], k: [2, 3],
+                opacity: 0.15,
+                color: '#94a3b8',
+                name: 'Normal plane to θ (Z=0)'
+            });
+
+            // Bounding plane of L_{-tp} (pink)
+            let unp = normalize(ntp);
+            let u = [1, 0, 0];
+            if(Math.abs(unp[0]) > 0.9) u = [0, 1, 0];
+            let v1_vec = normalize(cross(unp, u));
+            let v2_vec = normalize(cross(unp, v1_vec));
+            let ps = 2.5;
+            traces.push({
+                type: 'mesh3d',
+                x: [ps*(v1_vec[0]+v2_vec[0]), ps*(v1_vec[0]-v2_vec[0]), ps*(-v1_vec[0]-v2_vec[0]), ps*(-v1_vec[0]+v2_vec[0])],
+                y: [ps*(v1_vec[1]+v2_vec[1]), ps*(v1_vec[1]-v2_vec[1]), ps*(-v1_vec[1]-v2_vec[1]), ps*(-v1_vec[1]+v2_vec[1])],
+                z: [ps*(v1_vec[2]+v2_vec[2]), ps*(v1_vec[2]-v2_vec[2]), ps*(-v1_vec[2]-v2_vec[2]), ps*(-v1_vec[2]+v2_vec[2])],
+                i: [0, 0], j: [1, 2], k: [2, 3],
+                opacity: 0.3,
+                color: '#f43f5e', 
+                name: "L_{-θ'} Boundary"
+            });
+
+            const addVec = (v, color, name) => {
+                let nv = normalize(v).map(val=>val*1.5);
+                traces.push({
+                    type: 'scatter3d',
+                    mode: 'lines+text',
+                    x: [0, nv[0]], y: [0, nv[1]], z: [0, nv[2]],
+                    line: {color: color, width: 6},
+                    text: ['', name],
+                    textposition: 'top center',
+                    textfont: {color: color, size: 16, weight: 'bold'},
+                    showlegend: false
+                });
+            };
+
+            addVec(th, '#0f172a', 'θ');
+            addVec(nt1, '#0284c7', '-θ₁');
+            addVec(nt2, '#0284c7', '-θ₂');
+            addVec(ntp, '#e11d48', "-θ'");
+
+            let currentCamera = {eye: {x: 1.5, y: 1.5, z: 1.5}};
+            const plotDiv = document.getElementById('geoSepPlotly');
+            if (plotDiv && plotDiv.layout && plotDiv.layout.scene && plotDiv.layout.scene.camera) {
+                currentCamera = plotDiv.layout.scene.camera;
+            }
+
+            Plotly.react('geoSepPlotly', traces, {
+                margin: {l:0, r:0, b:0, t:0},
+                scene: {
+                    xaxis: {range: [-2.5, 2.5], visible: false},
+                    yaxis: {range: [-2.5, 2.5], visible: false},
+                    zaxis: {range: [-2.5, 2.5], visible: false},
+                    camera: currentCamera
+                },
+                uirevision: 'constant',
                 showlegend: false
             }, {responsive: true});
         }
