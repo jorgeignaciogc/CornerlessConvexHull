@@ -281,17 +281,15 @@
                         <div class="bg-slate-50 p-3 rounded border border-slate-200 overflow-x-auto">
                             $$\mathfrak{N}(x) := \{\theta \in \mathbb{R}^d_0 : H \subset x + \mathrm{cl}\,\mathfrak{L}_\theta\} \cup \{0\}$$
                         </div>
-                        <p>where $\mathfrak{L}_\theta := \{y \in \mathbb{R}^d : \langle \theta, y \rangle > 0\}$ denotes the positive half-space in the direction of $\theta\in\mathbb{R}^d_0:=\mathbb{R}^d\setminus\{0\}$.</p>
-                        
-                        <p class="pt-2"><strong>Defining the Exposed Point $\mathcal{I}_\theta$:</strong><br>For $\theta \in \mathbb{R}^d_0$ with $I_\theta := \inf_{x \in H} \langle \theta, x \rangle > -\infty$, the face exposed by $\theta$ is:</p>
+                        <p>where $\mathfrak{L}_\theta := \{y \in \mathbb{R}^d : \langle \theta, y \rangle > 0\}$ denotes the positive half-space in the direction of $\theta\in\mathbb{R}^d_0:=\mathbb{R}^d\setminus\{0\}$. Similarly, each $\theta\in\mathbb{R}^d_0$ <strong>exposes</strong> a <strong>face</strong>:</p>
                         <div class="bg-slate-50 p-3 rounded border border-slate-200 overflow-x-auto text-center">
-                            $$\mathfrak{F}_\theta := \{x \in H : \langle \theta, x \rangle = I_\theta\}$$
+                            $$\mathfrak{F}_\theta := \Big\{x \in H : \langle \theta, x \rangle = I_\theta:=\inf_{y\in H}\langle\theta,y\rangle\Big\}$$
                         </div>
-                        <p>Consider the last time the directional infimum is approached:</p>
+                        <p>Consider the last time the directional infimum (or exposed face) is approached:</p>
                         <div class="bg-slate-50 p-3 rounded border border-slate-200 overflow-x-auto text-center">
                             $$\eta_\theta := \sup\{t \in [0,T) : \langle\theta, X_t\rangle \!\wedge\! \langle\theta, X_{t-}\rangle = I_\theta\}$$
                         </div>
-                        <p>The exposed point is then defined as the position of $X$ at this time:</p>
+                        <p>We select a point in the exposed face by tracking the position of $X$ at this time:</p>
                         <div class="bg-slate-50 p-3 rounded border border-slate-200 overflow-x-auto text-center">
                             $$\mathcal{I}_\theta := \begin{cases} X_{\eta_\theta}, & \text{if } \langle\theta, X_{\eta_\theta}\rangle = I_\theta, \\ X_{\eta_\theta-}, & \text{if } \langle\theta, X_{\eta_\theta-}\rangle = I_\theta. \end{cases}$$
                         </div>
@@ -399,7 +397,7 @@
             <div class="mb-8">
                 <h3 class="text-xl font-bold text-slate-800 mb-4 serif">Local Differentiability & Bounding the Normal Cone</h3>
                 <div class="bg-white border border-slate-200 p-5 rounded-lg shadow-sm">
-                    <p class="text-slate-800 text-base mb-3"><b>Theorem (Rogozin for cones; Chaumont, GC, Mijatović, 2026+).</b><br> Fix $\theta \in \mathbb{R}^d_0$ with $I_\theta > -\infty$ a.s.</p>
+                    <p class="text-slate-800 text-base mb-3"><b>Theorem (Rogozin for cones around extrema; Chaumont, GC, Mijatović, 2026+).</b><br> Fix $\theta \in \mathbb{R}^d_0$ with $I_\theta > -\infty$ a.s.</p>
                     <ol class="list-decimal pl-5 space-y-2 text-base text-slate-700">
                         <li>If $N_\theta \neq \mathbb{R}^d$, then $\mathfrak{F}_\theta$ is a.s. a singleton $\{\mathcal{I}_\theta\}$.</li>
                         <li>Fix $k \in \{1, \dots, d-1\}$. Let $N_{\boldsymbol{\theta}}^k$ denote the set of all $[\theta_1,\ldots,\theta_k]\in\mathbb{R}^{d\times k}$ such that 
