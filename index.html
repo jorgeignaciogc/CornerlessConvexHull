@@ -612,11 +612,12 @@
                             <p class="text-lg text-slate-300 font-semibold mb-2">Pecherskii-Rogozin in $\mathbb{R}^d$ (Tamura & Tanaka, 2002).</p>
                             <p class="text-base text-slate-400 mb-2"> If $\zeta\sim\mathrm{Exp}(\lambda)$ is an independent exponential time with rate $\lambda>0$, then the vectors $(\overline{\tau}^{\theta}_\zeta,\overline{X}^{\theta}_\zeta)$ and $(\zeta-\overline{\tau}^{\theta}_\zeta,X_\zeta-\overline{X}^{\theta}_\zeta)$ in $\mathbb{R}^{d+1}$ are independent and infinitely divisible and, for $(\phi,u)\in\mathbb{R}_+\times\mathbb{R}^{d}$, we have</p>
                             <div class="bg-slate-900 p-3 rounded border border-slate-700 overflow-x-auto text-base">
-                                $$\begin{aligned}\mathbb{E}\Big[e^{-\phi\overline{\tau}^{\theta}_\zeta + i\langle u,\overline{X}^\theta_\zeta\rangle}\Big] 
-                                    &= \exp\bigg(\!\int_0^\infty\!\!\int_{\mathrm{cl}\,\mathfrak{L}_{\theta}}\! (e^{-\phi t + i\langle u,x\rangle}-1) \mathbb{P}(X_t\in dx)\frac{dt}{t}\bigg)\\ 
-                                    &= \frac{\kappa_{\theta}(\lambda,0)}{\kappa_{\theta}(\lambda+\phi,u)},\\ 
-                                \mathbb{E}\Big[e^{-\phi(\zeta-\overline{\tau}^{\theta}_\zeta) + i\langle u, X_\zeta-\overline{X}^{\theta}_\zeta\rangle}\Big] 
-                                    &= \exp\bigg(\!\int_0^\infty\!\!\int_{\mathfrak{L}_{-\theta}}\! (e^{-\phi t + i\langle u,x\rangle}-1)\mathbb{P}(X_t\in dx)\frac{dt}{t}\bigg),\end{aligned}$$
+                                $$\begin{aligned}\log\mathbb{E}\Big[e^{-\phi\overline{\tau}^{\theta}_\zeta + i\langle u,\overline{X}^\theta_\zeta\rangle}\Big] 
+                                    &= \int_{\mathbb{R}_+}\!
+\int_{\mathrm{cl}\,\mathfrak{L}_{\theta}}\! (e^{-\phi t + i\langle u,x\rangle}-1) \mathbb{P}(X_t\in dx)e^{-\lambda t}\frac{dt}{t}\\ 
+                                    &= \log\bigg(\frac{\kappa_{\theta}(\lambda,0)}{\kappa_{\theta}(\lambda+\phi,u)}\bigg),\\ 
+                                \log\mathbb{E}\Big[e^{-\phi(\zeta-\overline{\tau}^{\theta}_\zeta) + i\langle u, X_\zeta-\overline{X}^{\theta}_\zeta\rangle}\Big] 
+                                    &= \int_{\mathbb{R}_+}\!\int_{\mathfrak{L}_{-\theta}}\! (e^{-\phi t + i\langle u,x\rangle}-1)\mathbb{P}(X_t\in dx)e^{-\lambda t}\frac{dt}{t},\end{aligned}$$
                             </div>
                             <p class="text-base text-slate-400 mb-2"> where we define</p>
                             <div class="bg-slate-900 p-3 rounded border border-slate-700 overflow-x-auto text-base">
@@ -629,16 +630,16 @@
                             <p class="text-lg text-slate-300 font-semibold mb-2">Fristedt in $\mathbb{R}^d$ (Chaumont, GC, Mijatović, 2026+).</p>
                             <p class="text-base text-slate-400 mb-2">The time-changed process $(id, X) \circ \Gamma^\theta_t$ is a killed Lévy process with exponent</p>
                             <div class="bg-slate-900 p-3 rounded border border-slate-700 overflow-x-auto text-base">
-                                $$\log \mathbb{E}[e^{\langle(-\phi, i\vartheta), Y_1\rangle}] = -c_0 \kappa_\theta(\phi, \vartheta) + q_0 - q_\lambda$$
+                                $$\log \mathbb{E}[e^{\langle(-\phi, i\vartheta), Y_1\rangle}] = -c_0 \kappa_\theta(\phi, \vartheta).$$
                             </div>
-                            <p class="text-base text-slate-400 mt-2">Here, $q_0$ and $q_\lambda$ are just killing rates, where $\lambda$ is the killing rate of the original process $X$ and $\Gamma^\theta$ is the inverse local time of the reflected process of $\langle \theta,X\rangle$ at its running supremum.</p>
+                            <p class="text-base text-slate-400 mt-2">Here, $\Gamma^\theta$ is the inverse local time of the reflected process of $\langle \theta,X\rangle$ at its running supremum.</p>
                         </div>
                         
                         <div class="mt-2 border-t border-slate-600 pt-4">
                             <p class="text-lg text-slate-300 font-semibold mb-2">The ABCD Identity in $\mathbb{R}^d$ (Theorem; Chaumont, GC, Mijatović, 2026+).</p>
                             <p class="text-base text-slate-400 mb-2"> If $\langle\theta,X\rangle$ immediately enters $(0,\infty)$, then the following measures agree</p>
                             <div class="bg-slate-900 p-3 rounded border border-slate-700 overflow-x-auto text-base">
-                                $$\mathbb{P}(L^\theta_{\sigma^{\theta}(x^\theta)} \in ds, X_t \in dx) \frac{dt}{t} = \mathbb{P}(\Gamma^\theta_s \in dt, X \circ \Gamma^\theta_s \in dx) \frac{ds}{s}$$
+                                $$\mathbb{P}\big(L^\theta_{\sigma^{\theta}(x^\theta)} \in ds, X_t \in dx\big) \frac{dt}{t} = \mathbb{P}\big(\Gamma^\theta_s \in dt, X \circ \Gamma^\theta_s \in dx\big) \frac{ds}{s}$$
                             </div>
                             <p class="text-base text-slate-400 mt-2">for $(s,t,x)\in(0,\infty)\times(0,\infty)\times\mathfrak{L}_\theta$, where $\sigma^{\theta}(u) := \inf\{t>0 : \langle\theta,X_t\rangle > u\}$ is the first time $\langle\theta,X_t\rangle$ hits $(u,\infty)$, $u>0$.</p>
                             <p class="text-sm text-slate-400 mt-2">This identity was first established in $\mathbb{R}$ by Alili & Chaumont by extending a result of Bertoin & Doney. We note that the process $L^\theta\circ \sigma^\theta$ is the right-continuous inverse of $X^\theta\circ \Gamma^\theta$.</p>
